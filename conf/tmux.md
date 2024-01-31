@@ -1,3 +1,8 @@
+# tmux conf
+
+Copy the following content into `~/.tmux.conf` file.
+
+```bash
 # Use vim keymap on copy mode, default emacs
 setw -g mode-keys vi 
 
@@ -33,4 +38,4 @@ set -g history-limit 65536
 
 bind-key r source-file ~/.tmux.conf \; display-message "Tmux config reloaded!"
 bind-key P command-prompt -p "save history to file:" -I "~/tmux.log" "capture-pane -S -65536; save-buffer %1; delete-buffer"
-
+```
