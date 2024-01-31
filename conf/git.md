@@ -1,4 +1,4 @@
-# Git
+# git
 
 ## Add ssh-key
 
@@ -9,6 +9,8 @@ ssh-keygen -t rsa -C "your_email@example.com"
 ```
 
 ## Git config
+
+`vim ~/.gitconfig`
 
 ```ini
 [http]

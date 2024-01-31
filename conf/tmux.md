@@ -1,6 +1,8 @@
-# tmux conf
+# tmux
 
 Copy the following content into `~/.tmux.conf` file.
+
+`vim ~/.tmux.conf`
 
 ```bash
 # Use vim keymap on copy mode, default emacs

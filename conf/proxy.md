@@ -1,4 +1,4 @@
-# Proxy
+# proxy
 
 ## v2RayN
 
@@ -6,7 +6,7 @@ v2RayN is a good proxy client tool. See:
 
 <https://github.com/2dust/v2rayN>
 
-Add the following alias in your bashrc or zshrc:
+`vim ~/.zshrc`
 
 ```bash
 export host_ip=$(ip route | grep default | awk '{print $3}')
