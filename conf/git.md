@@ -15,8 +15,10 @@ ssh-keygen -t rsa -C "your_email@example.com"
 ```ini
 [http]
     sslVerify = false
+    #proxy = https://127.0.0.1:10809
 [https]
     sslVerify = false
+    #proxy = https://127.0.0.1:10809
 [alias]
     b = branch --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset) - %(contents:subject) %(color:green)(%(committerdate:relative)) [%(authorname)]' --sort=-committerdate
     d = diff

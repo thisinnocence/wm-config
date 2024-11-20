@@ -1,5 +1,11 @@
 # zsh
 
+## xterm-256
+
+```bash
+export TERM=xterm-256color
+```
+
 ## Enable * wildcard
 
 When using `grep key --include=*.c` in zsh, you may encounter zsh:
@@ -40,6 +46,23 @@ alias unproxy='
     echo "unset proxy ok!"
 '
 ```
+
+If use WLS2 Ubuntu, you can also do:
+
+https://github.com/microsoft/WSL/issues/10753
+
+> 1. Open or create the wsl configuration file (located at %USERPROFILE%\.wslconfig), and enter the following content:
+
+```ini
+[experimental]
+autoMemoryReclaim=gradual  # gradual  | dropcache | disabled
+networkingMode=mirrored
+dnsTunneling=true
+firewall=true
+autoProxy=true
+```
+
+> 2. Open the command prompt and execute `wsl --shutdown`
 
 ## Reference
 
