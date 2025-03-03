@@ -64,7 +64,35 @@ autoProxy=true
 
 > 2. Open the command prompt and execute `wsl --shutdown`
 
+## Plugins
+
+```bash
+plugins=(
+    git
+    tmux
+
+    # https://github.com/zsh-users/zsh-autosuggestions/blob/master/INSTALL.md#oh-my-zsh
+    zsh-autosuggestions
+
+    # sudo apt install fzf first
+    fzf
+
+    # https://github.com/zsh-users/zsh-syntax-highlighting/blob/master/INSTALL.md#with-a-plugin-manager
+    # Note: zsh-syntax-highlighting must be the last plugin sourced.
+    zsh-syntax-highlighting
+)
+
+# https://github.com/zsh-users/zsh-completions
+# Additional completions, add nextline before `source source $ZSH/oh-my-zsh.sh`
+fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
+
+source $ZSH/oh-my-zsh.sh
+
+```
+
 ## Reference
 
 - <https://blog.csdn.net/qq_36148847/article/details/79260745>
 - <https://zhuanlan.zhihu.com/p/414627975>
+
+
