@@ -1,7 +1,5 @@
 # tmux
 
-Copy the following content into `~/.tmux.conf` file.
-
 `vim ~/.tmux.conf`
 
 ```bash

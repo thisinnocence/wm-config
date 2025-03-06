@@ -1,18 +1,20 @@
 # zsh
 
+vim `~/.zshrc`
+
 ## xterm-256
 
 ```bash
 export TERM=xterm-256color
 ```
 
+Or just put tmux in plugin(). Use `echo $TERM` to check.
+
 ## Enable * wildcard
 
 When using `grep key --include=*.c` in zsh, you may encounter zsh:
 no matches found error. By default, zsh always automatically expands `*.`
 To resolve this, add the following configuration to `~/.zshrc`:
-
-`vim ~/.zshrc`
 
 ```bash
 # pass * to cmd
@@ -23,8 +25,6 @@ setopt no_nomatch
 v2RayN is a good proxy client tool. See:
 
 <https://github.com/2dust/v2rayN>
-
-`vim ~/.zshrc`
 
 ```bash
 export host_ip=$(ip route | grep default | awk '{print $3}')
@@ -49,7 +49,7 @@ alias unproxy='
 
 If use WLS2 Ubuntu, you can also do:
 
-https://github.com/microsoft/WSL/issues/10753
+<https://github.com/microsoft/WSL/issues/10753>
 
 > 1. Open or create the wsl configuration file (located at %USERPROFILE%\.wslconfig), and enter the following content:
 
@@ -94,5 +94,4 @@ source $ZSH/oh-my-zsh.sh
 
 - <https://blog.csdn.net/qq_36148847/article/details/79260745>
 - <https://zhuanlan.zhihu.com/p/414627975>
-
 
