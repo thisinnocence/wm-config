@@ -8,6 +8,7 @@
         "<C-b>": false,
         "<C-c>": false,
         "<C-f>": false,
+        "<C-h>": false,
         "<C-i>": false,
         "<C-p>": false,
         "<C-s>": false,
@@ -36,6 +37,7 @@
         "**/*.so": true,
         "**/*.out": true,
         "**/.cache": true,
+        "**/__pycache__": true,
         "**/compile_commands.json": true,
     }
 }
