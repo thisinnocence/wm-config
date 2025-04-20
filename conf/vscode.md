@@ -4,7 +4,6 @@
 {
     // common
     "window.title": "${dirty}${activeEditorMedium}${separator}${rootName}${separator}${profileName}${separator}${appName}",
-    "workbench.startupEditor": "none",
     "editor.rulers": [120],
     "files.exclude": {
         "**/*.d": true,
@@ -13,6 +12,7 @@
         "**/*.out": true,
         "**/.cache": true,
         "**/__pycache__": true,
+        "**/node_modules": true,
         "**/compile_commands.json": true,
     }
 
@@ -41,7 +41,6 @@
     "files.associations": {
         ".clang-format": "yaml"
     },
-
     // conflict with clangd
     "C_Cpp.intelliSenseEngine": "disabled",
 
@@ -59,8 +58,9 @@
         "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
     },
     "markdownlint.config": {
-        "MD024": false,
+        "MD024": false, // https://github.com/DavidAnson/markdownlint/blob/v0.37.4/doc/md024.md
         "MD037": false,
+        "MD046": false,
         "no-hard-tabs": false
     }
 }
