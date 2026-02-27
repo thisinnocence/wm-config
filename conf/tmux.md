@@ -11,7 +11,12 @@ setw -g mode-keys vi
 set -g mouse on
 
 # For zsh and vim color  
-set -g default-terminal "screen-256color"
+set -g default-terminal "tmux-256color"
+set -ga terminal-features 'xterm-256color:RGB'
+
+# for nvim
+set -sg escape-time 10
+set -g focus-events on
 
 # Move around panes with ALT + arrow keys
 bind -n M-Left select-pane -L
