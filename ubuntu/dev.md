@@ -1,74 +1,53 @@
 # Dev
 
-## Python With uv
+## Zsh
 
-`uv` is installed in user scope.  Binary location:
+Powerlevel10k is used as the `Oh My Zsh` theme.
+
+Plugin functions:
+
+- `git`: Oh My Zsh Git aliases and Git completion helpers
+- `zsh-autosuggestions`: shows gray command suggestions while typing, based on history and completions
+- `zsh-syntax-highlighting`: highlights valid and invalid shell syntax while typing
+
+Reload shell after changes: `exec zsh`
+
+## Sudo Timeout
+
+Sudo was configured to remember authentication for 120 minutes.
+
+Config file:
 
 ```text
-~/.local/bin/uv
+/etc/sudoers.d/timeout
 ```
 
-Notice:
+Content:
 
-- Use `uv` for Python runtime management and project virtual environments
-- Keep system Python untouched
-- Keep project envs local to project directories (for example `.venv`)
+```text
+Defaults timestamp_timeout=120
+```
 
-e.g.:
+Validation command:
 
 ```bash
-uv python list
-uv python install 3.12
-uv venv --python 3.12
-uv pip install -r requirements.txt
-uv run python main.py
+sudo visudo -cf /etc/sudoers.d/timeout
 ```
 
-Notes:
-
-- `uv` uses user-space caches and tools
-- Prefer running Python work through `uv` in each project instead of system-wide `pip`
-
-## SSH And GitHub
-
-GitHub SSH was configured to use the local Clash Verge SOCKS5 proxy. SSH config file:
+Validation result:
 
 ```text
-~/.ssh/config
-```
-
-Config:
-
-```sshconfig
-Host github.com
-  HostName github.com
-  User git
-  Port 22
-  IdentityFile ~/.ssh/id_ed25519
-  IdentitiesOnly yes
-  ProxyCommand nc -x 127.0.0.1:7897 -X 5 %h %p
-```
-
-Verification command:
-
-```bash
-ssh -T git@github.com
-```
-
-Verification result:
-
-```text
-Hi thisinnocence! You've successfully authenticated, but GitHub does not provide shell access.
+/etc/sudoers.d/timeout: parsed OK
 ```
 
 Meaning:
 
-- SSH GitHub clone and push traffic uses Clash Verge through SOCKS5
-- GitHub authentication works with the generated SSH key
+- After entering the sudo password once, sudo should not ask again for 120 minutes in that sudo timestamp context
+- This is safer than full passwordless sudo
 
 ## Proxy Behavior
 
-Clash Verge Rev is running locally and exposes a proxy listener on:
+*Clash Verge Rev* is running locally and exposes a proxy listener on:
 
 ```text
 127.0.0.1:7897
@@ -111,62 +90,76 @@ Apt Ubuntu packages: direct to Aliyun mirror
 
 The stale Ubuntu installer CD-ROM apt source was disabled because it caused `apt-get update` to fail.
 
-Disabled file:
+Disabled file: `/etc/apt/sources.list.d/cdrom.sources.disabled`
+
+Use the Aliyun mirror for the main package repositories, while `resolute-security` still uses the official Ubuntu security source:
 
 ```text
-/etc/apt/sources.list.d/cdrom.sources.disabled
+URIs: https://mirrors.aliyun.com/ubuntu/
+Suites: resolute resolute-updates resolute-backports
+
+URIs: http://security.ubuntu.com/ubuntu/
+Suites: resolute-security
 ```
 
-Original source:
-
-```text
-/etc/apt/sources.list.d/cdrom.sources
-```
-
-Reason: The file:/cdrom repository no longer existed after installation.
-
-Verification command: `bash sudo apt-get update`
-
-## Sudo Timeout
-
-Sudo was configured to remember authentication for 120 minutes.
-
-Config file:
-
-```text
-/etc/sudoers.d/timeout
-```
-
-Content:
-
-```text
-Defaults timestamp_timeout=120
-```
-
-Validation command:
+No need use proxy for apt, check command:
 
 ```bash
-sudo visudo -cf /etc/sudoers.d/timeout
-```
-
-Validation result:
-
-```text
-/etc/sudoers.d/timeout: parsed OK
-```
-
-Meaning:
-
-- After entering the sudo password once, sudo should not ask again for 120 minutes in that sudo timestamp context
-- This is safer than full passwordless sudo
-
-## Useful Verification Commands
-
-```bash
-zsh -ic 'echo plugins=$plugins'
-ssh -T git@github.com
-ssh -G github.com | rg -i 'proxycommand|identityfile|identitiesonly'
 apt-config dump | rg -i 'Acquire::.*Proxy|proxy'
-sudo apt-get update
-sudo visudo -cf /etc/sudoers.d/timeout
 ```
+
+## SSH And GitHub
+
+GitHub SSH was configured to use the local Clash Verge SOCKS5 proxy. SSH config file:
+
+```text
+~/.ssh/config
+```
+
+Config:
+
+```sshconfig
+Host github.com
+  HostName github.com
+  User git
+  Port 22
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+  ProxyCommand nc -x 127.0.0.1:7897 -X 5 %h %p
+```
+
+Verification command:
+
+```bash
+ssh -T git@github.com
+Hi thisinnocence! You've successfully authenticated, but GitHub does not provide shell access.
+```
+
+## Python With uv
+
+`uv` is installed in user scope.  Binary location:
+
+```text
+~/.local/bin/uv
+```
+
+Notice:
+
+- Use `uv` for Python runtime management and project virtual environments
+- Keep system Python untouched
+- Keep project envs local to project directories (for example `.venv`)
+
+e.g.:
+
+```bash
+uv python list
+uv python install 3.12
+uv venv --python 3.12
+uv pip install -r requirements.txt
+uv run python main.py
+```
+
+Notes:
+
+- `uv` uses user-space caches and tools
+- Prefer running Python work through `uv` in each project instead of system-wide `pip`

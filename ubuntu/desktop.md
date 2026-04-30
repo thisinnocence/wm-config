@@ -84,16 +84,3 @@ gsettings reset org.gnome.shell.extensions.dash-to-dock click-action
 If the dock does not update immediately:
 
 - On Wayland: log out and log back in
-
-## Zsh
-
-Powerlevel10k is used as the `Oh My Zsh` theme.
-
-Plugin functions:
-
-- `git`: Oh My Zsh Git aliases and Git completion helpers
-- `zsh-autosuggestions`: shows gray command suggestions while typing, based on history and completions
-- `zsh-syntax-highlighting`: highlights valid and invalid shell syntax while typing
-
-Reload shell after changes: `exec zsh`
-
