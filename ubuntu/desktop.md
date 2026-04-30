@@ -14,7 +14,7 @@ User: michael
 
 这里仅保留必须通过命令或配置方式处理的项。像 dock 位置、是否自动隐藏、是否 panel mode 这类常见选项，可以直接在 Ubuntu Desktop 的 GUI 设置里调整，因此不再记录。
 
-#### `click-action`
+### `click-action`
 
 控制点击 dock 上应用图标时的行为。这个值不放在 Ubuntu Desktop 的常规 GUI 设置里，因此保留命令配置方式。
 
@@ -36,7 +36,7 @@ gsettings set org.gnome.shell.extensions.dash-to-dock click-action minimize-or-p
 gsettings get org.gnome.shell.extensions.dash-to-dock click-action
 ```
 
-### 恢复 Ubuntu 默认样式
+### 恢复 Ubuntu 默认
 
 如果想恢复 `click-action` 的默认值，可以执行：
 
@@ -45,6 +45,64 @@ gsettings reset org.gnome.shell.extensions.dash-to-dock click-action
 ```
 
 如果 dock 没有立即更新： 注销后重新登录
+
+## Flameshot 截图
+
+当前使用 GNOME 自定义全局快捷键调用 `flameshot`。
+
+快捷键：
+
+- `F1`：截图
+
+对应命令：
+
+```text
+F1 -> flameshot gui
+```
+
+GNOME custom keybindings：
+
+```text
+/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/
+```
+
+PS: `Flameshot` 的 `--pin` 在当前 `GNOME Wayland` 还不能很好的兼容。
+
+## Codex CLI 贴图
+
+在 GNOME Wayland 下，`Codex CLI` 的 TUI 粘贴图片功能依赖图形会话剪贴板访问。
+
+遇到的问题：
+
+```text
+Failed to paste image: clipboard unavailable: Unknown error while interacting with the clipboard: X11 server connection timed out because it was unreachable
+```
+
+已安装的剪贴板工具：
+
+- `wl-clipboard`
+- `xclip`
+
+根因：
+
+- 当前 `codex` 会话跑在受限沙箱里，外层有 `bwrap`
+- 虽然环境变量里有 `WAYLAND_DISPLAY` / `DISPLAY`，但沙箱内进程仍然无法连接桌面图形会话
+- 结果是 `wl-copy` / `wl-paste` 和 `xclip` 都不可用，TUI 无法读取图片剪贴板
+
+修复方式：
+
+- 将 `~/.codex/config.toml` 的默认 sandbox 改为 `danger-full-access`
+- 将默认 approval policy 改为 `never`
+- 完全退出当前 `codex` 会话后重新启动
+
+这组配置在效果上基本等价于在 `codex` 里使用 `/permissions full`：
+
+- 不再使用受限工作区沙箱
+- 可以访问工作区外文件
+- 可以联网
+- 更容易访问当前桌面图形会话的剪贴板和相关 socket
+
+这种长期把默认值改成 `danger-full-access` 虽然方便，也可能触发模型误操作，暂时先这么配置。
 
 ## 中文输入法
 
@@ -141,26 +199,16 @@ gsettings set org.gnome.shell enabled-extensions "['ding@rastersoft.com', 'ubunt
 
 - `Pinyin`
 
-完成后需要注销并重新登录。
+常见问题：
 
-验证命令：
+- `VS Code` 如果用 `snap` 版，`GNOME Wayland + Fcitx5` 下输入法兼容性比 `.deb` 版更容易出问题
+- `fcitx5-diagnose` 显示当前桌面环境里仍然混有 `IBus/XIM` 痕迹，因此 Electron 应用里的输入法行为可能不稳定
+- `Fcitx5` 的简繁转换会绑定 `Ctrl+Shift+F`，这和 `VS Code` 默认全局搜索快捷键冲突
 
-```bash
-printenv | rg '^(XMODIFIERS|QT_IM_MODULE|QT_IM_MODULES)='
-gnome-extensions list --enabled | rg 'kimpanel'
-pgrep -a fcitx5
-```
+当前处理：
 
-期望结果：
+- 已移除 `~/.config/fcitx5/conf/chttrans.conf` 里的 `Ctrl+Shift+F` 热键
+- 已移除 `snap` 版 `VS Code`
+- 已安装官方 `.deb` 版 `VS Code`
+- 当前 `code` 命令路径为 `/usr/share/code/bin/code`
 
-```text
-XMODIFIERS=@im=fcitx
-QT_IM_MODULE=fcitx
-QT_IM_MODULES=wayland;fcitx
-kimpanel@kde.org
-```
-
-常用说明：
-
-- 默认可用 `Ctrl+Space` 在中英文输入之间切换
-- 如果登录后输入法没有正常启动，可以执行 `fcitx5 -rd`
