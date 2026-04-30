@@ -10,6 +10,13 @@ Desktop session: GNOME Wayland
 User: michael
 ```
 
+## 中文字体
+
+```bash
+sudo apt install fonts-noto-cjk fonts-noto-cjk-extra
+fc-cache -fv
+```
+
 ## Ubuntu Dock
 
 这里仅保留必须通过命令或配置方式处理的项。像 dock 位置、是否自动隐藏、是否 panel mode 这类常见选项，可以直接在 Ubuntu Desktop 的 GUI 设置里调整，因此不再记录。
