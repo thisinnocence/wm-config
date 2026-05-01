@@ -2,6 +2,7 @@
 
 ## Zsh
 
+
 Powerlevel10k is used as the `Oh My Zsh` theme.
 
 Plugin functions:
@@ -189,3 +190,12 @@ pnpm -v
 ```
 
 Notes: `fnm` is initialized from the shell config, so a new shell should pick up the active Node.js version automatically
+
+The pnpm mirror set:
+
+```bash
+pnpm config set registry https://registry.npmmirror.com
+```
+
+the cfg file is `~/.npmrc`
+
