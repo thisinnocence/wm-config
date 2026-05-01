@@ -123,6 +123,37 @@ GNOME custom keybindings：
 
 PS: `Flameshot` 的 `--pin` 在当前 `GNOME Wayland` 还不能很好的兼容。
 
+## Ghostty 终端
+
+建议terminal: `Ghostty`
+
+定位：
+
+- 原生 GUI 终端模拟器，Linux 下支持 `Wayland`
+- 默认配置就能正常使用，不需要像传统终端那样额外调很多参数
+- 适合替代 `gnome-terminal` 作为日常主终端
+
+配置文件位置：
+
+```text
+~/.config/ghostty/config.ghostty
+```
+
+当前实际配置：
+
+```text
+# 窗口初始大小，单位是终端网格，不是像素
+window-width = 160
+window-height = 50
+
+# Ubuntu 风格主题
+theme = Ubuntu
+
+# 光标用方块
+cursor-style = block
+cursor-style-blink = false
+```
+
 ## Codex CLI 贴图
 
 在 GNOME Wayland 下，`Codex CLI` 的 TUI 粘贴图片功能依赖图形会话剪贴板访问。
