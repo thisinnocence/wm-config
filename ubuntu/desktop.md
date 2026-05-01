@@ -46,7 +46,23 @@ gsettings get org.gnome.mutter experimental-features
 
 ## 字体配置
 
-系统中文 fallback: Noto Sans CJK SC
+当前实际值：
+
+- UI 字体：`Ubuntu Sans 11`
+- 文档字体：`Sans 11`
+- 等宽字体：`Ubuntu Sans Mono 11`
+- 字体放大：`1.1`
+- Hinting：`slight`
+- Antialiasing：`rgba`
+- 系统中文 sans fallback：`Noto Sans CJK SC`
+- 系统中文 serif fallback：`Noto Serif CJK SC`
+
+说明：
+
+- 这台机器当前使用 GNOME 默认风格的 `Ubuntu Sans + Ubuntu Sans Mono`
+- `JetBrains Mono` 和 `Noto CJK` 已安装，但不作为当前系统等宽字体默认值
+- 终端字体如果没有做单独覆盖，就按系统默认等宽字体这条链路走
+- `monospace:lang=zh-cn` 的底层匹配当前仍偏系统默认回退，不使用之前试验过的 `Sarasa` 方案
 
 ```bash
 sudo apt install fonts-noto-cjk fonts-noto-cjk-extra
