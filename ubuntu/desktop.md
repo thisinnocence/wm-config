@@ -154,6 +154,8 @@ cursor-style = block
 cursor-style-blink = false
 ```
 
+默认全屏快捷键是 `Ctrl + Enter`，不是 `F11`。
+
 ## Codex CLI 贴图
 
 在 GNOME Wayland 下，`Codex CLI` 的 TUI 粘贴图片功能依赖图形会话剪贴板访问。
