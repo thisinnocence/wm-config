@@ -39,8 +39,8 @@ gsettings get org.gnome.mutter experimental-features
 
 ## 缩放显示
 
-分辨率： 125
-字体放大： 1.1
+- 分辨率： 125
+- 字体放大： 1.1
 
 分辨率太大影响UI的美观程度，字体通过 `sudo apt install gnome-tweaks` 配置即可。
 
