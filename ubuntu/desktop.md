@@ -57,12 +57,7 @@ gsettings get org.gnome.mutter experimental-features
 - 系统中文 sans fallback：`Noto Sans CJK SC`
 - 系统中文 serif fallback：`Noto Serif CJK SC`
 
-说明：
-
-- 这台机器当前使用 GNOME 默认风格的 `Ubuntu Sans + Ubuntu Sans Mono`
-- `JetBrains Mono` 和 `Noto CJK` 已安装，但不作为当前系统等宽字体默认值
-- 终端字体如果没有做单独覆盖，就按系统默认等宽字体这条链路走
-- `monospace:lang=zh-cn` 的底层匹配当前仍偏系统默认回退，不使用之前试验过的 `Sarasa` 方案
+安装字体命令说明：
 
 ```bash
 sudo apt install fonts-noto-cjk fonts-noto-cjk-extra
@@ -264,10 +259,3 @@ gsettings set org.gnome.shell enabled-extensions "['ding@rastersoft.com', 'ubunt
 - `VS Code` 如果用 `snap` 版，`GNOME Wayland + Fcitx5` 下输入法兼容性比 `.deb` 版更容易出问题
 - `fcitx5-diagnose` 显示当前桌面环境里仍然混有 `IBus/XIM` 痕迹，因此 Electron 应用里的输入法行为可能不稳定
 - `Fcitx5` 的简繁转换会绑定 `Ctrl+Shift+F`，这和 `VS Code` 默认全局搜索快捷键冲突
-
-当前处理：
-
-- 已移除 `~/.config/fcitx5/conf/chttrans.conf` 里的 `Ctrl+Shift+F` 热键
-- 已移除 `snap` 版 `VS Code`
-- 已安装官方 `.deb` 版 `VS Code`
-- 当前 `code` 命令路径为 `/usr/share/code/bin/code`
