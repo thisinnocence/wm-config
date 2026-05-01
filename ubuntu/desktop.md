@@ -287,6 +287,43 @@ gsettings set org.gnome.shell enabled-extensions "['ding@rastersoft.com', 'ubunt
 
 - `Pinyin`
 
+候选框与预编辑区的额外配置：
+
+- 当前候选框字体由 `Kimpanel` 单独控制，不跟系统 UI 字体完全绑定
+- 当前实际字体值：`Noto Sans CJK SC 11`
+- 调整命令：
+
+```bash
+gsettings --schemadir ~/.local/share/gnome-shell/extensions/kimpanel@kde.org/schemas get org.gnome.shell.extensions.kimpanel font
+gsettings --schemadir ~/.local/share/gnome-shell/extensions/kimpanel@kde.org/schemas set org.gnome.shell.extensions.kimpanel font 'Noto Sans CJK SC 11'
+```
+
+- 如果改完候选框字体后没有立即生效，重启 `fcitx5`
+
+```bash
+pkill fcitx5
+fcitx5 -d
+```
+
+预编辑区排障记录：
+
+- 现象：候选框字体改大后，候选框里只看到汉字，看不到拼音串
+- 当前最终有效做法：关闭 `client preedit`
+- 配置文件：
+
+```text
+~/.config/fcitx5/config
+```
+
+- 当前实际值：
+
+```text
+PreeditEnabledByDefault=False
+```
+
+- 修改后重启 `fcitx5`，拼音预编辑显示恢复正常
+- 这套 `GNOME Wayland + Fcitx5 + Kimpanel` 里，是否显示拼音串不只取决于 `pinyin.conf`，还和 `client preedit` 的显示位置有关
+
 常见问题：
 
 - `VS Code` 如果用 `snap` 版，`GNOME Wayland + Fcitx5` 下输入法兼容性比 `.deb` 版更容易出问题
