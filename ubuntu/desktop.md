@@ -65,6 +65,144 @@ sudo apt install fonts-jetbrains-mono
 fc-cache -fv
 ```
 
+## 中文输入法
+
+当前桌面中文输入法使用 `Fcitx5 + Pinyin`。
+
+已安装的主要组件：
+
+- `fcitx5`
+- `fcitx5-chinese-addons`
+- `fcitx5-pinyin`
+- `fcitx5-config-qt`
+- `fcitx5-frontend-all`
+
+当前输入法框架：
+
+```text
+~/.xinputrc
+run_im fcitx5
+```
+
+GNOME Wayland 下按 Fcitx 官方建议配置环境变量。
+
+配置文件：
+
+```text
+~/.pam_environment
+```
+
+内容：
+
+```text
+XMODIFIERS  DEFAULT=@im=fcitx
+QT_IM_MODULE  DEFAULT=fcitx
+QT_IM_MODULES  DEFAULT=wayland;fcitx
+```
+
+同步配置文件：
+
+```text
+~/.config/environment.d/im-fcitx5.conf
+```
+
+内容：
+
+```text
+XMODIFIERS=@im=fcitx
+QT_IM_MODULE=fcitx
+QT_IM_MODULES=wayland;fcitx
+```
+
+Fcitx5 使用用户级 autostart 启动：
+
+```text
+~/.config/autostart/org.fcitx.Fcitx5.desktop
+```
+
+GNOME Wayland 下候选框位置依赖 `Kimpanel`，已安装并启用这个 GNOME Shell extension：
+
+```text
+~/.local/share/gnome-shell/extensions/kimpanel@kde.org
+```
+
+当前启用的 GNOME Shell extension 包含：
+
+```text
+kimpanel@kde.org
+```
+
+安装与切换命令：
+
+```bash
+sudo apt update
+sudo apt install -y fcitx5 fcitx5-chinese-addons fcitx5-config-qt fcitx5-frontend-all
+im-config -n fcitx5
+cp /usr/share/applications/org.fcitx.Fcitx5.desktop ~/.config/autostart/org.fcitx.Fcitx5.desktop
+```
+
+安装 `Kimpanel`：
+
+```bash
+wget -O /tmp/kimpanel.shell-extension.zip 'https://extensions.gnome.org/review/download/69345.shell-extension.zip'
+gnome-extensions install --force /tmp/kimpanel.shell-extension.zip
+gnome-extensions enable kimpanel@kde.org
+```
+
+如果 `gnome-extensions enable` 在当前会话里找不到新扩展，可以先把它加入 enabled list，注销后重新登录：
+
+```bash
+gsettings get org.gnome.shell enabled-extensions
+gsettings set org.gnome.shell enabled-extensions "['ding@rastersoft.com', 'ubuntu-dock@ubuntu.com', 'tiling-assistant@ubuntu.com', 'snapd-search-provider@canonical.com', 'web-search-provider@ubuntu.com', 'kimpanel@kde.org']"
+```
+
+登录后打开 `Fcitx 5 Configuration`，添加：
+
+- `Pinyin`
+
+候选框与预编辑区的额外配置：
+
+- 当前候选框字体由 `Kimpanel` 单独控制，不跟系统 UI 字体完全绑定
+- 当前实际字体值：`Noto Sans CJK SC 12`
+- 调整命令：
+
+```bash
+gsettings --schemadir ~/.local/share/gnome-shell/extensions/kimpanel@kde.org/schemas get org.gnome.shell.extensions.kimpanel font
+gsettings --schemadir ~/.local/share/gnome-shell/extensions/kimpanel@kde.org/schemas set org.gnome.shell.extensions.kimpanel font 'Noto Sans CJK SC 12'
+```
+
+- 如果改完候选框字体后没有立即生效，重启 `fcitx5`
+
+```bash
+pkill fcitx5
+fcitx5 -d
+```
+
+预编辑区排障记录：
+
+- 现象：候选框字体改大后，候选框里只看到汉字，看不到拼音串
+- 当前最终有效做法：关闭 `client preedit`
+- 配置文件：
+
+```text
+~/.config/fcitx5/config
+```
+
+- 当前实际值：
+
+```text
+PreeditEnabledByDefault=False
+```
+
+- 修改后重启 `fcitx5`，拼音预编辑显示恢复正常
+- 这套 `GNOME Wayland + Fcitx5 + Kimpanel` 里，是否显示拼音串不只取决于 `pinyin.conf`，还和 `client preedit` 的显示位置有关
+
+常见问题：
+
+- `VS Code` 如果用 `snap` 版，`GNOME Wayland + Fcitx5` 下输入法兼容性比 `.deb` 版更容易出问题
+- `fcitx5-diagnose` 显示当前桌面环境里仍然混有 `IBus/XIM` 痕迹，因此 Electron 应用里的输入法行为可能不稳定
+- `Fcitx5` 的简繁转换会绑定 `Ctrl+Shift+F`，这和 `VS Code` 默认全局搜索快捷键冲突
+
 ## Ubuntu Dock
 
 这里列出必须通过命令或配置方式处理的项。像 dock 位置、是否自动隐藏、是否 panel mode 这类常见选项，可以直接在 Ubuntu Desktop 的 GUI 设置里调整。
@@ -191,141 +329,3 @@ Failed to paste image: clipboard unavailable: Unknown error while interacting wi
 - 更容易访问当前桌面图形会话的剪贴板和相关 socket
 
 这种长期把默认值改成 `danger-full-access` 虽然方便，也可能触发模型误操作，暂时先这么配置。
-
-## 中文输入法
-
-当前桌面中文输入法使用 `Fcitx5 + Pinyin`。
-
-已安装的主要组件：
-
-- `fcitx5`
-- `fcitx5-chinese-addons`
-- `fcitx5-pinyin`
-- `fcitx5-config-qt`
-- `fcitx5-frontend-all`
-
-当前输入法框架：
-
-```text
-~/.xinputrc
-run_im fcitx5
-```
-
-GNOME Wayland 下按 Fcitx 官方建议配置环境变量。
-
-配置文件：
-
-```text
-~/.pam_environment
-```
-
-内容：
-
-```text
-XMODIFIERS  DEFAULT=@im=fcitx
-QT_IM_MODULE  DEFAULT=fcitx
-QT_IM_MODULES  DEFAULT=wayland;fcitx
-```
-
-同步配置文件：
-
-```text
-~/.config/environment.d/im-fcitx5.conf
-```
-
-内容：
-
-```text
-XMODIFIERS=@im=fcitx
-QT_IM_MODULE=fcitx
-QT_IM_MODULES=wayland;fcitx
-```
-
-Fcitx5 使用用户级 autostart 启动：
-
-```text
-~/.config/autostart/org.fcitx.Fcitx5.desktop
-```
-
-GNOME Wayland 下候选框位置依赖 `Kimpanel`，已安装并启用这个 GNOME Shell extension：
-
-```text
-~/.local/share/gnome-shell/extensions/kimpanel@kde.org
-```
-
-当前启用的 GNOME Shell extension 包含：
-
-```text
-kimpanel@kde.org
-```
-
-安装与切换命令：
-
-```bash
-sudo apt update
-sudo apt install -y fcitx5 fcitx5-chinese-addons fcitx5-config-qt fcitx5-frontend-all
-im-config -n fcitx5
-cp /usr/share/applications/org.fcitx.Fcitx5.desktop ~/.config/autostart/org.fcitx.Fcitx5.desktop
-```
-
-安装 `Kimpanel`：
-
-```bash
-wget -O /tmp/kimpanel.shell-extension.zip 'https://extensions.gnome.org/review/download/69345.shell-extension.zip'
-gnome-extensions install --force /tmp/kimpanel.shell-extension.zip
-gnome-extensions enable kimpanel@kde.org
-```
-
-如果 `gnome-extensions enable` 在当前会话里找不到新扩展，可以先把它加入 enabled list，注销后重新登录：
-
-```bash
-gsettings get org.gnome.shell enabled-extensions
-gsettings set org.gnome.shell enabled-extensions "['ding@rastersoft.com', 'ubuntu-dock@ubuntu.com', 'tiling-assistant@ubuntu.com', 'snapd-search-provider@canonical.com', 'web-search-provider@ubuntu.com', 'kimpanel@kde.org']"
-```
-
-登录后打开 `Fcitx 5 Configuration`，添加：
-
-- `Pinyin`
-
-候选框与预编辑区的额外配置：
-
-- 当前候选框字体由 `Kimpanel` 单独控制，不跟系统 UI 字体完全绑定
-- 当前实际字体值：`Noto Sans CJK SC 11`
-- 调整命令：
-
-```bash
-gsettings --schemadir ~/.local/share/gnome-shell/extensions/kimpanel@kde.org/schemas get org.gnome.shell.extensions.kimpanel font
-gsettings --schemadir ~/.local/share/gnome-shell/extensions/kimpanel@kde.org/schemas set org.gnome.shell.extensions.kimpanel font 'Noto Sans CJK SC 11'
-```
-
-- 如果改完候选框字体后没有立即生效，重启 `fcitx5`
-
-```bash
-pkill fcitx5
-fcitx5 -d
-```
-
-预编辑区排障记录：
-
-- 现象：候选框字体改大后，候选框里只看到汉字，看不到拼音串
-- 当前最终有效做法：关闭 `client preedit`
-- 配置文件：
-
-```text
-~/.config/fcitx5/config
-```
-
-- 当前实际值：
-
-```text
-PreeditEnabledByDefault=False
-```
-
-- 修改后重启 `fcitx5`，拼音预编辑显示恢复正常
-- 这套 `GNOME Wayland + Fcitx5 + Kimpanel` 里，是否显示拼音串不只取决于 `pinyin.conf`，还和 `client preedit` 的显示位置有关
-
-常见问题：
-
-- `VS Code` 如果用 `snap` 版，`GNOME Wayland + Fcitx5` 下输入法兼容性比 `.deb` 版更容易出问题
-- `fcitx5-diagnose` 显示当前桌面环境里仍然混有 `IBus/XIM` 痕迹，因此 Electron 应用里的输入法行为可能不稳定
-- `Fcitx5` 的简繁转换会绑定 `Ctrl+Shift+F`，这和 `VS Code` 默认全局搜索快捷键冲突
