@@ -54,16 +54,27 @@ Meaning:
 127.0.0.1:7897
 ```
 
-The current shell environment has proxy variables set automatically:
+The current shell environment has proxy variables set automatically, but when use Ghostty term app, should set mannually:
 
-```text
-HTTP_PROXY=http://127.0.0.1:7897
-HTTPS_PROXY=http://127.0.0.1:7897
-ALL_PROXY=socks://127.0.0.1:7897
-http_proxy=http://127.0.0.1:7897
-https_proxy=http://127.0.0.1:7897
-all_proxy=socks://127.0.0.1:7897
-NO_PROXY=localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,::1
+```bash
+proxy() {
+  export HTTP_PROXY="http://127.0.0.1:7897"
+  export HTTPS_PROXY="http://127.0.0.1:7897"
+  export ALL_PROXY="socks://127.0.0.1:7897"
+  export http_proxy="$HTTP_PROXY"
+  export https_proxy="$HTTPS_PROXY"
+  export all_proxy="$ALL_PROXY"
+  export NO_PROXY="localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,::1"
+  export no_proxy="$NO_PROXY"
+  echo "Proxy enabled: 127.0.0.1:7897"
+}
+
+unproxy() {
+  unset HTTP_PROXY HTTPS_PROXY ALL_PROXY
+  unset http_proxy https_proxy all_proxy
+  unset NO_PROXY no_proxy
+  echo "Proxy disabled"
+}
 ```
 
 Expected behavior:
