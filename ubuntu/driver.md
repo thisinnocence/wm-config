@@ -56,6 +56,47 @@ Driver in use: rtw89_8852be
 Kernel module: rtw89_8852be
 ```
 
+Wi-Fi suspend/resume note:
+
+```text
+Issue: system may fail to wake cleanly after idle suspend
+Main suspect: rtw89_8852be PCIe power-management instability
+Seen in logs:
+- timed out to flush pci txch: 0
+- timed out to flush queues
+Fix applied:
+- /etc/modprobe.d/rtw89-pci.conf
+- options rtw89_pci disable_clkreq=Y disable_aspm_l1=Y
+Status: reboot required after update-initramfs -u
+```
+
+After reboot, verify the workaround:
+
+```bash
+cat /sys/module/rtw89_pci/parameters/disable_clkreq
+cat /sys/module/rtw89_pci/parameters/disable_aspm_l1
+```
+
+Expected:
+
+```text
+Y
+Y
+```
+
+If the issue happens again, check:
+
+```bash
+journalctl -b -1 -k --no-pager | rg -i 'rtw89|timed out to flush|read rf busy|read swsi busy'
+journalctl -b -1 --no-pager | rg -i 'suspend|resume|gnome-shell|gdm|fprintd|power key'
+```
+
+If still unstable after this workaround:
+
+```text
+Next step: also set disable_aspm_l1ss=Y for rtw89_pci
+```
+
 Ethernet:
 
 ```text
@@ -97,4 +138,3 @@ The active CPU power driver is: `intel_pstate`
 
 - Check NVIDIA status: `nvidia-smi`
 - Check PCI drivers: `lspci -nnk`
-
