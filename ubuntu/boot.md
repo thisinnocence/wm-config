@@ -15,7 +15,8 @@
 
 1. `UEFI BootOrder` 第一项是 `ubuntu`
 2. `EFI fallback` 路径 `/EFI/Boot/bootx64.efi` 也是 Ubuntu 的 `shim`
-3. `GRUB_DEFAULT=0`，进入 GRUB 后默认也是 Ubuntu
+3. `GRUB_TIMEOUT_STYLE=menu` 且 `GRUB_TIMEOUT=5`
+4. `GRUB_DEFAULT="Windows Boot Manager (on /dev/nvme0n1p1)"`，进入 GRUB 后默认是 Windows
 
 所以现在机器的整体行为是：
 
@@ -24,7 +25,8 @@
 -> UEFI 先找 ubuntu
 -> 进入 /EFI/ubuntu/shimx64.efi
 -> shim 再进入 GRUB
--> GRUB 默认选 Ubuntu
+-> GRUB 显示 5 秒菜单
+-> 如果不选，默认进 Windows
 ```
 
 联想 F11 进入 EFI/BIOS 后，在BIOS可以是设置启动配置顺序。
@@ -189,7 +191,7 @@ sha256sum /boot/efi/EFI/Boot/bootx64.efi /boot/efi/EFI/ubuntu/shimx64.efi /boot/
 当前 `/etc/default/grub` 的关键值是：
 
 ```text
-GRUB_DEFAULT=0
+GRUB_DEFAULT="Windows Boot Manager (on /dev/nvme0n1p1)"
 GRUB_TIMEOUT_STYLE=menu
 GRUB_TIMEOUT=5
 GRUB_DISABLE_OS_PROBER=false
@@ -197,10 +199,26 @@ GRUB_DISABLE_OS_PROBER=false
 
 含义分别是：
 
-- `GRUB_DEFAULT=0`：默认启动第一个菜单项
+- `GRUB_DEFAULT="Windows Boot Manager (on /dev/nvme0n1p1)"`：默认启动 Windows 启动项
 - `GRUB_TIMEOUT_STYLE=menu`：显示 GRUB 菜单
 - `GRUB_TIMEOUT=5`：等待 5 秒
 - `GRUB_DISABLE_OS_PROBER=false`：允许探测 Windows 并为它生成启动项
+
+这台机器当前实际菜单顺序已经验证过：
+
+```text
+0: Ubuntu
+submenu: Advanced options for Ubuntu
+1: Windows Boot Manager (on /dev/nvme0n1p1)
+```
+
+你也可以用数字来代替字符串配置 GRUB_DEFULT, 但是建议用字符串，更加稳定。
+
+检查命令：
+
+```bash
+sudo awk -F"'" '/^menuentry /{print i++ ": " $2} /^submenu /{print "submenu: " $2}' /boot/grub/grub.cfg
+```
 
 这里要特别分清两件事：
 
@@ -251,7 +269,7 @@ GRUB_DEFAULT="Windows Boot Manager (on /dev/nvme0n1p1)"
 sudo update-grub
 ```
 
-不建议这里用数字，比如 `GRUB_DEFAULT=1`。原因很直接：菜单顺序以后可能变化，但标题字符串更稳。
+原因很直接：菜单顺序以后可能变化，但标题字符串更稳。
 
 ## 如果默认还是 Ubuntu
 
