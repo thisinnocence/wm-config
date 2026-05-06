@@ -296,9 +296,9 @@ cursor-style-blink = false
 
 ## Codex CLI 贴图
 
-在 GNOME Wayland 下，`Codex CLI` 的 TUI 粘贴图片功能依赖图形会话剪贴板访问。
+在 GNOME Wayland 下，`Codex CLI` 的 TUI 粘贴图片功能依赖终端和当前图形会话的剪贴板访问。
 
-遇到的问题：
+之前遇到过的问题：
 
 ```text
 Failed to paste image: clipboard unavailable: Unknown error while interacting with the clipboard: X11 server connection timed out because it was unreachable
@@ -309,23 +309,12 @@ Failed to paste image: clipboard unavailable: Unknown error while interacting wi
 - `wl-clipboard`
 - `xclip`
 
-根因：
+当前验证结果：
 
-- 当前 `codex` 会话跑在受限沙箱里，外层有 `bwrap`
-- 虽然环境变量里有 `WAYLAND_DISPLAY` / `DISPLAY`，但沙箱内进程仍然无法连接桌面图形会话
-- 结果是 `wl-copy` / `wl-paste` 和 `xclip` 都不可用，TUI 无法读取图片剪贴板
+- 使用 `Ghostty` 图形终端启动 `codex` 时，可以正常粘贴图片
+- 使用默认权限模式即可，不需要把 `codex` 默认改成 `danger-full-access`
 
-修复方式：
+当前结论：
 
-- 将 `~/.codex/config.toml` 的默认 sandbox 改为 `danger-full-access`
-- 将默认 approval policy 改为 `never`
-- 完全退出当前 `codex` 会话后重新启动
-
-这组配置在效果上基本等价于在 `codex` 里使用 `/permissions full`：
-
-- 不再使用受限工作区沙箱
-- 可以访问工作区外文件
-- 可以联网
-- 更容易访问当前桌面图形会话的剪贴板和相关 socket
-
-这种长期把默认值改成 `danger-full-access` 虽然方便，也可能触发模型误操作，暂时先这么配置。
+- 贴图能力不只是 `codex` 权限配置问题，也和终端本身以及它对桌面图形会话剪贴板的接入方式有关
+- 目前这台机器上，`Ghostty App` 是已验证可用的方案
