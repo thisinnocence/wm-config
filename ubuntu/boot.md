@@ -1,44 +1,58 @@
-# Dual Boot 启动配置记录
+# Dual Boot 启动配置
 
-`Windows + Ubuntu` 双系统的启动，过程分 4 层：
+这台机器是 `Windows + Ubuntu` 双系统。当前最终效果是：
+
+- 正常开机默认进入 Windows
+- GRUB 菜单显示 5 秒
+- GRUB 顶层菜单顺序是 Windows -> Ubuntu -> Ubuntu advanced
+- 需要时可以在 GRUB 菜单里手动选择 Ubuntu
+
+当前实际 GRUB 菜单：
+
+```text
+0: Windows Boot Manager (on /dev/nvme0n1p1)
+1: Ubuntu
+submenu: Advanced options for Ubuntu
+```
+
+## 整体启动链路
+
+这台机器的启动链路分 4 层：
 
 1. `UEFI NVRAM BootOrder`
-2. `EFI System Partition` 里的启动文件
+2. `EFI System Partition` 里的 EFI 程序
 3. `GRUB` 菜单生成逻辑
 4. `GRUB` 默认启动项
 
-这 4 层会一起决定“按下电源键后，最后进的是哪个系统”。
-
-## 当前配置
-
-当前是 Ubuntu 有限启动：
-
-1. `UEFI BootOrder` 第一项是 `ubuntu`
-2. `EFI fallback` 路径 `/EFI/Boot/bootx64.efi` 也是 Ubuntu 的 `shim`
-3. `GRUB_TIMEOUT_STYLE=menu` 且 `GRUB_TIMEOUT=5`
-4. `GRUB_DEFAULT="Windows Boot Manager (on /dev/nvme0n1p1)"`，进入 GRUB 后默认是 Windows
-
-所以现在机器的整体行为是：
+当前启动路径是：
 
 ```text
 正常开机
--> UEFI 先找 ubuntu
--> 进入 /EFI/ubuntu/shimx64.efi
--> shim 再进入 GRUB
+-> UEFI 按 BootOrder 先进入 ubuntu
+-> /EFI/ubuntu/shimx64.efi 启动
+-> shim 进入 GRUB
 -> GRUB 显示 5 秒菜单
--> 如果不选，默认进 Windows
+-> 不手动选择时，默认进入 Windows Boot Manager
+-> Windows 启动
 ```
 
-联想 F11 进入 EFI/BIOS 后，在BIOS可以是设置启动配置顺序。
+这里要区分两个概念：
 
-## 第一层：UEFI 在决定先找谁
+- 固件层面，`BootOrder` 第一项仍然是 `ubuntu`
+- 用户可见的最终默认启动系统是 Windows
 
-如果只看 GRUB 菜单，很容易误以为“启动顺序全由 GRUB 决定”。其实第一跳不是 GRUB，而是主板固件。
+保留 `ubuntu` 作为 UEFI 第一项的原因是让机器先进入 GRUB。这样开机时既默认进 Windows，又保留一个稳定的 Ubuntu/Windows 选择菜单。
 
-当前 `efibootmgr -v` 的关键结果是：
+## EFI 配置
 
-- `BootCurrent: 0004`
-- `BootOrder: 0004,0000,0001,0002,0005,0006,0007`
+### 检查 UEFI 配置
+
+当前 `efibootmgr -v` 的关键结果：
+
+```text
+BootCurrent: 0004
+BootOrder: 0004,0000,0001,0002,0005,0006,0007
+```
 
 对应关系：
 
@@ -50,312 +64,215 @@
 - `Boot0006`: `UEFI:Removable Device`
 - `Boot0007`: `UEFI:Network Device`
 
-这里最重要的信息只有两条：
-
-- 当前主板优先启动 `ubuntu`
-- 这次开机实际也是从 `ubuntu` 启动的
-
-另外，这台机器当前没有 `BootNext`。这表示没有设置“一次性只在下次启动时生效”的临时目标，开机行为完全受 `BootOrder` 控制。
-
-补充：Windows 点“更新并重启”时，通常会先把下一次启动改到自己的启动链路里。做法可能是临时改 `BootNext`，也可能由 Windows Boot Manager/BCD 接管后续流程，所以这类重启不等同于一次普通冷启动，通常不会被当前 `BootOrder` 直接打断。
-
 检查命令：
 
 ```bash
-efibootmgr -v
+sudo efibootmgr -v
 ```
 
-如果以后想临时只让下次进 Windows：
-
-```bash
-sudo efibootmgr -n 0000
-```
-
-如果想把 Windows 永久提到 UEFI 第一顺位：
+如果要跳过 GRUB，让固件默认直接进入 Windows：
 
 ```bash
 sudo efibootmgr -o 0000,0004,0001,0002,0005,0006,0007
 ```
 
-如果想恢复 Ubuntu 第一顺位：
+恢复当前状态，也就是先进入 Ubuntu shim/GRUB：
 
 ```bash
 sudo efibootmgr -o 0004,0000,0001,0002,0005,0006,0007
 ```
 
-## 第二层：EFI 分区里到底放了什么
+联想主机可以通过开机按 `F11` 进入 EFI/BIOS 启动菜单，并在 BIOS 中调整启动顺序。
 
-UEFI 读到的不是 Linux 文件系统里的 `/boot/grub/grub.cfg`，而是 EFI 分区里的 `.efi` 文件。
+### 检查 EFI 分区
 
-这台机器当前的 EFI 分区挂载在：
+当前 EFI 分区：
 
 ```text
 /boot/efi
 ```
 
-`/etc/fstab` 里的实际配置是：
+设备和 UUID：
+
+```text
+/dev/nvme0n1p1 143A-C1BE
+```
+
+`/etc/fstab` 中的配置：
 
 ```text
 /dev/disk/by-uuid/143A-C1BE /boot/efi vfat defaults 0 1
 ```
 
-也就是说，Ubuntu 和 Windows 的启动入口都放在这一块 EFI System Partition 里。
+关键 EFI 文件：
 
-当前最关键的文件是这几组：
-
-Ubuntu：
-
-```text
-/boot/efi/EFI/ubuntu/shimx64.efi
-/boot/efi/EFI/ubuntu/grubx64.efi
-/boot/efi/EFI/ubuntu/grub.cfg
+```bash
+/boot/efi/EFI/ubuntu/shimx64.efi   # buntu 在 Secure Boot 场景里的第一入口
+/boot/efi/EFI/ubuntu/grubx64.efi   # 是 GRUB EFI 程序
+/boot/efi/EFI/ubuntu/grub.cfg      # 是 grub 配置
+/boot/efi/EFI/Microsoft/Boot/bootmgfw.efi # 是 Windows Boot Manager 入口
+/boot/efi/EFI/Microsoft/Boot/BCD          #  Windows 启动配置数据库
 ```
 
-Windows：
+Ubuntu EFI 目录里的 `grub.cfg` 只是跳板，不是完整菜单。它会找到 Ubuntu 根分区，然后加载真正的 `/boot/grub/grub.cfg`。
 
-```text
-/boot/efi/EFI/Microsoft/Boot/bootmgfw.efi
-/boot/efi/EFI/Microsoft/Boot/BCD
-```
-
-可以这样理解：
-
-- `shimx64.efi` 是 Ubuntu 在 Secure Boot 场景里最常见的第一入口
-- `grubx64.efi` 才是真正的 GRUB EFI 程序
-- `bootmgfw.efi` 是 Windows Boot Manager 的入口
-- `BCD` 是 Windows 自己的启动配置数据库
-
-Ubuntu 那个 EFI 目录里的 `grub.cfg` 不是完整菜单，它只是一个跳板，内容核心是：
-
-```text
-search.fs_uuid 057adfa3-11d6-4cdf-9cd6-f74537e7efe6 root
-set prefix=($root)'/boot/grub'
-configfile $prefix/grub.cfg
-```
-
-它的作用是：
-
-- 先找到 Ubuntu 的根分区
-- 再去加载真正的 `/boot/grub/grub.cfg`
-
-## 第三层：为什么 fallback 也会影响最终启动结果
-
-很多文章只讲 `BootOrder`，但实际维护时，`EFI fallback` 路径也很重要。
-
-标准 fallback 路径是：
-
-```text
-/boot/efi/EFI/Boot/bootx64.efi
-```
-
-这台机器当前还有：
-
-```text
-/boot/efi/EFI/Boot/mmx64.efi
-/boot/efi/EFI/Boot/fbx64.efi
-```
-
-关键点在于：这台机器的
-
-- `/EFI/Boot/bootx64.efi`
-- `/EFI/ubuntu/shimx64.efi`
-
-哈希相同。
-
-这表示：
-
-- `bootx64.efi` 现在其实就是 Ubuntu 的 `shim`
-
-所以如果将来遇到下面这些情况：
-
-- 主板忽略了 NVRAM 启动项
-- 某次固件升级重置了启动顺序
-- 主板重新扫描 EFI 分区后走默认 fallback 路径
-
-机器依然很可能先进入 Ubuntu，而不是直接进 Windows。
-
-这个设计的好处是恢复能力更强：只要 Ubuntu 还能进，就可以从 Linux 侧直接修 `BootOrder`、重跑 `update-grub`，或者检查 EFI 分区里的启动文件。
-
-检查命令：
+检查 EFI fallback 文件：
 
 ```bash
 sha256sum /boot/efi/EFI/Boot/bootx64.efi /boot/efi/EFI/ubuntu/shimx64.efi /boot/efi/EFI/Microsoft/Boot/bootmgfw.efi
 ```
 
-对这台机器来说，这一层是个很关键但又很容易被忽略的细节。
+如果 `/EFI/Boot/bootx64.efi` 和 `/EFI/ubuntu/shimx64.efi` 哈希相同，说明 fallback 路径也会进入 Ubuntu shim/GRUB。
 
-## 第四层：GRUB 菜单和默认项
+## GRUB 配置
 
-当 UEFI 已经进入 Ubuntu 的 `shim` 之后，接下来才轮到 GRUB 决定显示什么菜单、默认选哪一项。
+### GRUB 默认项配置
 
-当前 `/etc/default/grub` 的关键值是：
+当前 `/etc/default/grub` 的关键配置：
 
-```text
-GRUB_DEFAULT="Windows Boot Manager (on /dev/nvme0n1p1)"
-GRUB_TIMEOUT_STYLE=menu
-GRUB_TIMEOUT=5
-GRUB_DISABLE_OS_PROBER=false
+```bash
+GRUB_DEFAULT="Windows Boot Manager (on /dev/nvme0n1p1)"  # 这条指定默认启动 Windows
+GRUB_TIMEOUT_STYLE=menu  # 表示显示 GRUB 菜单
+GRUB_TIMEOUT=5           # 表示等待 5 秒
+GRUB_DISABLE_OS_PROBER=true  # 表示不让 `30_os-prober` 自动生成 Windows 项，避免和自定义 Windows 项重复
 ```
 
-含义分别是：
-
-- `GRUB_DEFAULT="Windows Boot Manager (on /dev/nvme0n1p1)"`：默认启动 Windows 启动项
-- `GRUB_TIMEOUT_STYLE=menu`：显示 GRUB 菜单
-- `GRUB_TIMEOUT=5`：等待 5 秒
-- `GRUB_DISABLE_OS_PROBER=false`：允许探测 Windows 并为它生成启动项
-
-这台机器当前实际菜单顺序已经验证过：
-
-```text
-0: Ubuntu
-submenu: Advanced options for Ubuntu
-1: Windows Boot Manager (on /dev/nvme0n1p1)
-```
-
-你也可以用数字来代替字符串配置 GRUB_DEFULT, 但是建议用字符串，更加稳定。
+使用标题字符串作为 `GRUB_DEFAULT`，建议不要使用数字索引。数字索引依赖菜单顺序，后续菜单变化时更容易跑偏。
 
 检查命令：
 
 ```bash
-sudo awk -F"'" '/^menuentry /{print i++ ": " $2} /^submenu /{print "submenu: " $2}' /boot/grub/grub.cfg
+grep -E '^GRUB_(DEFAULT|TIMEOUT_STYLE|TIMEOUT|DISABLE_OS_PROBER)=' /etc/default/grub
 ```
 
-这里要特别分清两件事：
+### GRUB 显示OS启动顺序
 
-- `UEFI BootOrder` 决定先进入哪个 EFI 程序
-- `GRUB_DEFAULT` 决定进入 GRUB 后默认启动谁
+GRUB 顶层菜单顺序由 `/etc/grub.d/` 里的脚本文件名顺序决定，不由 `/etc/default/grub` 决定。
 
-这不是一个层级的问题。
+当前相关脚本和状态：
 
-如果只是想“开机后等 5 秒给我选 Ubuntu 还是 Windows”，最稳的是让 GRUB 来做，不要指望 UEFI 固件一定支持同样的等待和选择逻辑。主板有些会提供 `Boot Delay` 之类选项，但那通常只是 POST 延迟，不等于完整的启动菜单选择。
+```bash
+/etc/grub.d/06_windows        # 可执行，负责生成 Windows 第一项
+/etc/grub.d/10_linux          # 可执行，负责生成 Ubuntu 和 Advanced options
+/etc/grub.d/20_memtest86+     # 不可执行，不生成 memtest 菜单项(手工取消的可执行权限)
+/etc/grub.d/30_os-prober      # 可执行，但因为 `GRUB_DISABLE_OS_PROBER=true`，不会生成 Windows 项
+/etc/grub.d/30_uefi-firmware
+```
 
-## 关闭 memtest86+
+检查生成后的菜单：
 
-把 `/etc/grub.d/20_memtest86+` 关掉了，所以 GRUB 顶层菜单从原来的 5 项调整成了 3 项，`Windows Boot Manager` 也从第 5 个提前到了第 3 个。
+```bash
+$ sudo awk -F"'" '/^menuentry /{print i++ ": " $2} /^submenu /{print "submenu: " $2}' /boot/grub/grub.cfg
+0: Windows Boot Manager (on /dev/nvme0n1p1)
+1: Ubuntu
+submenu: Advanced options for Ubuntu
+```
+
+### 配置 Windows 作为首位
+
+当前通过 `/etc/grub.d/06_windows` 手动生成 Windows 菜单项。 新增此文件，配置如下内容：
+
+```bash
+#!/bin/sh
+set -e
+
+cat <<'GRUB_EOF'
+menuentry 'Windows Boot Manager (on /dev/nvme0n1p1)' --class windows --class os {
+    insmod part_gpt
+    insmod fat
+    search --no-floppy --fs-uuid --set=root 143A-C1BE
+    chainloader /EFI/Microsoft/Boot/bootmgfw.efi
+}
+GRUB_EOF
+```
+
+其中：
+
+- `143A-C1BE` 是 EFI 分区 UUID
+- `/EFI/Microsoft/Boot/bootmgfw.efi` 是 Windows Boot Manager
+- `06_windows` 排在 `10_linux` 前面，所以 Windows 显示在 Ubuntu 前面
+
+然后设置执行 可执行 权限。然后编辑 `/etc/default/grub`：
+
+```bash
+GRUB_DEFAULT="Windows Boot Manager (on /dev/nvme0n1p1)"
+GRUB_TIMEOUT_STYLE=menu
+GRUB_TIMEOUT=5
+GRUB_DISABLE_OS_PROBER=true    # 这个改成了 true, 就是不让自动生成了，我们手工配置了 06_windows
+```
+
+最后重新生成 GRUB：
+
+```bash
+sudo update-grub
+```
+
+注：配置前可以先确认 EFI 分区 UUID 和 Windows Boot Manager 路径：
+
+```bash
+findmnt -no SOURCE,UUID /boot/efi
+ls -l /boot/efi/EFI/Microsoft/Boot/bootmgfw.efi
+```
+
+不建议把 `/etc/grub.d/30_os-prober` 改名成 `06_os-prober`。那样会修改发行版包管理的脚本文件，GRUB 包升级时更容易被覆盖或引入重复项。
+
+如果要取消 windows 作为首位，恢复由 `os-prober` 自动生成 Windows，按照如下操作即可：
+
+```bash
+sudo rm /etc/grub.d/06_windows
+sudo vim /etc/default/grub
+```
+
+设置：
+
+```bash
+GRUB_DISABLE_OS_PROBER=false
+```
+
+然后重新生成 GRUB：
+
+```bash
+sudo update-grub
+```
+
+### 取消 memtest86+ 执行权限
+
+配置 `/etc/grub.d/20_memtest86+` 不可执行, 让 GRUB 不生成 memtest 顶层菜单项。
 
 ```bash
 sudo chmod -x /etc/grub.d/20_memtest86+
 sudo update-grub
 ```
 
-这次调整的核心原因很简单：
+### 配置默认进入 Ubuntu
 
-- `memtest86+` 只用于内存排障
-- 日常双系统开机基本用不上
-- 去掉它以后，菜单更短，Windows 位置也更靠前
+```bash
+sudo vim /etc/default/grub
+```
 
-这台机器当前的 GRUB 与菜单生成最相关的是：
-
-- `/etc/grub.d/10_linux`
-- `/etc/grub.d/30_os-prober`
-- `/etc/grub.d/30_uefi-firmware`
-
-## 如果想默认进 Windows
-
-编辑：
+设置：
 
 ```text
-/etc/default/grub
+GRUB_DEFAULT=1
 ```
 
-把：
-
-```text
-// 原来：
-GRUB_DEFAULT=0
-// 改成：
-GRUB_DEFAULT="Windows Boot Manager (on /dev/nvme0n1p1)"
-// 更新：
-sudo update-grub
-```
-
-原因很直接：菜单顺序以后可能变化，但标题字符串更稳。
-
-## 如果默认还是 Ubuntu
-
-保持：
-
-```text
-GRUB_DEFAULT=0
-sudo update-grub
-```
-
-## 排查启动问题
-
-如果以后遇到“为什么这次没有进我预期的系统”，我通常按这个顺序检查：
-
-### 1. 先看 UEFI 层
-
-```bash
-efibootmgr -v
-```
-
-看：
-
-- `BootOrder`
-- `BootCurrent`
-- 有没有 `BootNext`
-
-### 2. 再看 fallback 路径是不是还指向 Ubuntu
-
-```bash
-sha256sum /boot/efi/EFI/Boot/bootx64.efi /boot/efi/EFI/ubuntu/shimx64.efi /boot/efi/EFI/Microsoft/Boot/bootmgfw.efi
-```
-
-### 3. 再看 GRUB 默认项
-
-```bash
-grep ^GRUB_DEFAULT= /etc/default/grub
-```
-
-### 4. 再看 GRUB 菜单到底是怎么生成的
-
-```bash
-sudo grep -E "^menuentry |^submenu " /boot/grub/grub.cfg
-```
-
-或者：
-
-```bash
-sudo awk -F"'" '/^menuentry /{print i++ ": " $2} /^submenu /{print "submenu: " $2}' /boot/grub/grub.cfg
-```
-
-### 5. 改完配置后别忘了重生成 GRUB
+然后重新生成 GRUB：
 
 ```bash
 sudo update-grub
 ```
 
-## 回滚方法
+注意：当前菜单里 Ubuntu 是第 1 项，所以 `GRUB_DEFAULT=1` 表示默认进入 Ubuntu。
 
-如果以后想恢复 `memtest86+`：
 
-```bash
-sudo chmod +x /etc/grub.d/20_memtest86+
-sudo update-grub
-```
 
-如果以后想把 Ubuntu 放回 UEFI 第一顺位：
+## 启动问题排查
 
-```bash
-sudo efibootmgr -o 0004,0000,0001,0002,0005,0006,0007
-```
+启动结果不符合预期时，按这个顺序排查：
 
-或者开机 F11 进入 BIOS 手动调整。
-
-## 常见问题
-
-### `grubenv` 为什么会突然坏
-
-`grubenv` 是 GRUB 用来记录启动状态的小环境块。如果上一次写入被打断，或者 GRUB 相关更新/关机流程没有正常结束，它就可能变成 `invalid environment block`。这类问题通常重建文件就能恢复，不是 `BootOrder` 本身坏了。
-
-## 经验
-
-对个人双系统台式机，先分清楚哪层影响：
-
-- 改 UEFI 第一项
-- 改 EFI fallback
-- 改 GRUB 菜单生成
-- 改 GRUB 默认项
-
-一旦层次清楚，双系统启动再针对性调整。
+1. 检查 UEFI BootOrder
+2. 检查 EFI fallback 文件
+3. 检查 `/etc/default/grub`
+4. 检查 `/etc/grub.d/` 脚本顺序和执行权限
+5. 检查生成后的 `/boot/grub/grub.cfg`
+6. 重新执行 `sudo update-grub`
