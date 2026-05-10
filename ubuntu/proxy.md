@@ -55,3 +55,25 @@ Host github.com
 ssh -T git@github.com
 Hi thisinnocence! You've successfully authenticated, but GitHub does not provide shell access.
 ```
+
+## Apt 源配置
+
+旧的 Ubuntu installer CD-ROM apt source 已禁用，因为它会导致 `apt-get update` 失败。
+
+已禁用文件：`/etc/apt/sources.list.d/cdrom.sources.disabled`
+
+主软件源使用 Aliyun mirror，`resolute-security` 仍使用 Ubuntu 官方 security source：
+
+```yaml
+URIs: https://mirrors.aliyun.com/ubuntu/
+Suites: resolute resolute-updates resolute-backports
+
+URIs: http://security.ubuntu.com/ubuntu/
+Suites: resolute-security
+```
+
+`apt` 有国内阿里的 mirror 后，不要再配置 proxy, 检查命令：
+
+```bash
+apt-config dump | rg -i 'Acquire::.*Proxy|proxy'
+```
