@@ -15,7 +15,7 @@ Directory layout:
 | tmux  | <https://github.com/thisinnocence/wm-config/blob/master/dev/tmux.md>    |
 | zsh   | <https://github.com/thisinnocence/wm-config/blob/master/dev/zsh.md>     |
 | vscode| <https://github.com/thisinnocence/wm-config/blob/master/dev/vscode.md>  |
-| node  | <https://github.com/thisinnocence/wm-config/blob/master/dev/node.md>    |
+| node  | <https://github.com/thisinnocence/wm-config/blob/master/dev/nodejs.md>  |
 | python| <https://github.com/thisinnocence/wm-config/blob/master/dev/python.md>  |
 
 Because Vim configuration is somewhat complex, I maintain the Vim configuration in a separate code repository.
