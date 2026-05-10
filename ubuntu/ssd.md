@@ -1,63 +1,41 @@
-# SSD 与 Dual Boot 保护记录
-
-这份文件记录为了避免 Ubuntu 误操作 Windows 分区而做的设置。
+# 双系统 SSD 配置
 
 ## 当前磁盘结构
 
-系统检测到同一块 NVMe SSD 上同时存在 Windows 和 Ubuntu 分区。
+当前是再同一块 NVMe SSD 配置的的 Windows 和 Ubuntu 分区。
 
-```text
+```bash
+# SSD
 Disk: nvme0n1
-```
 
-Windows 相关分区：
-
-```text
+# Windows 相关分区：
 /dev/nvme0n1p3  NTFS  Windows    UUID=12363D8F363D7537
 /dev/nvme0n1p4  NTFS  Data       UUID=224E3E0C4E3DD96D
 /dev/nvme0n1p5  NTFS  WinRE_DRV  UUID=82D03E7FD03E798D
-```
 
-Ubuntu 相关分区：
-
-```text
+# Ubuntu 相关分区：
 /dev/nvme0n1p1  vfat  SYSTEM  /boot/efi
 /dev/nvme0n1p6  ext4          /
 ```
 
-## 风险说明
+## Linux 下对 Windows 的配置
 
-这些 Windows 分区原本没有被自动挂载，也没有写在 `/etc/fstab` 里。
+### 关闭自动挂载
 
-但 GNOME 可以在文件管理器里显示这些 NTFS 分区。如果手动点击它们，Ubuntu 可能会挂载这些分区，然后就存在误删、误改 Windows 文件的风险。
-
-为了降低这个风险，做了两类设置：
-
-- 关闭 GNOME automount
-- 用 udev 隐藏 Windows 相关 NTFS 分区
-
-## 关闭 GNOME Automount
-
-执行的设置：
+Windows 分区原本没有被自动挂载，也没有写在 `/etc/fstab` 里。但 GNOME 可以在文件管理器里显示这些 NTFS 分区。
+如果手动点击它们，Ubuntu 可能会挂载这些分区，这样就会存在误删、误改 Windows 文件的风险。 为了降低这个风险，
+做了两类设置：
 
 ```bash
+# 关闭 gnome 自动挂载
 gsettings set org.gnome.desktop.media-handling automount false
 gsettings set org.gnome.desktop.media-handling automount-open false
+# 配置结果
+automount=false       # 插入或检测到磁盘时，GNOME 不自动挂载
+automount-open=false  # 挂载后 GNOME 不自动打开文件管理器窗口
 ```
 
-当前结果：
-
-```text
-automount=false
-automount-open=false
-```
-
-含义：
-
-- `automount=false`：插入或检测到磁盘时，GNOME 不自动挂载
-- `automount-open=false`：挂载后 GNOME 不自动打开文件管理器窗口
-
-## 隐藏 Windows 分区
+### 隐藏 Windows 分区
 
 创建了这个 udev 规则文件：
 
@@ -92,16 +70,12 @@ EFI 分区 /boot/efi
 其他外接 U 盘或移动硬盘
 ```
 
-## 重新加载规则
-
-执行过：
+重新加载规则，执行：
 
 ```bash
-pkexec udevadm control --reload-rules
-pkexec udevadm trigger --name-match=/dev/nvme0n1p3 --name-match=/dev/nvme0n1p4 --name-match=/dev/nvme0n1p5
+sudo udevadm control --reload-rules
+sudo udevadm trigger --name-match=/dev/nvme0n1p3 --name-match=/dev/nvme0n1p4 --name-match=/dev/nvme0n1p5
 ```
-
-## 验证结果
 
 验证 udev 属性：
 
@@ -113,7 +87,7 @@ udevadm info --query=property --name=/dev/nvme0n1p5
 
 确认结果：
 
-```text
+```bash
 UDISKS_IGNORE=1
 UDISKS_PRESENTATION_HIDE=1
 ```
@@ -143,15 +117,7 @@ findmnt -t ntfs,ntfs3,fuseblk,exfat,vfat -o TARGET,SOURCE,FSTYPE,OPTIONS
 Windows NTFS 分区没有挂载
 ```
 
-## 当前安全状态
-
-当前 Ubuntu 不会自动挂载 Windows 分区。
-
-GNOME 文件管理器也不会直接显示这些 Windows NTFS 分区。
-
-这可以减少 dual boot 环境下 Ubuntu 误操作 Windows 分区的风险。
-
-## 如果以后需要临时访问 Windows 分区
+### 临时访问 Windows 分区
 
 不建议日常这样做。如果确实需要访问，可以手动挂载指定分区。
 
@@ -173,7 +139,7 @@ sudo mount -t ntfs3 -o ro /dev/nvme0n1p3 /mnt/windows
 sudo umount /mnt/windows
 ```
 
-## 如果以后想恢复显示
+### 恢复windows分区显示
 
 删除或禁用这个 udev 规则：
 
