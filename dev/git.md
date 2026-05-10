@@ -44,3 +44,34 @@ ssh-keygen -t rsa -C "your_email@example.com"
 ## Reference
 
 - <https://snyk.io/blog/10-git-aliases-for-faster-and-productive-git-workflow>
+
+## Git delta
+
+`git delta` is configured as the global Git pager.
+
+Current global config:
+
+```ini
+[core]
+    pager = delta
+[pager]
+    diff = false
+    log = false
+[delta]
+    navigate = true
+    side-by-side = true
+```
+
+Meaning:
+
+- `core.pager = delta`: use `delta` as the default pager for Git output
+- `pager.diff = false`: do not force `git diff` through pager config, avoid double-pager conflicts
+- `pager.log = false`: do not force `git log` through pager config, let `core.pager` handle normal cases
+- `delta.navigate = true`: allow easier navigation in long diff output
+- `delta.side-by-side = true`: show side-by-side diff when terminal width is enough
+
+Check command:
+
+```bash
+git config --global --get-regexp '^delta\\.|^interactive\\.diffFilter$|^pager\\.(diff|log|reflog|show)$|^core\\.pager$'
+```

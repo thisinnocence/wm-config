@@ -2,6 +2,16 @@
 
 vim `~/.zshrc`
 
+Powerlevel10k is used as the `Oh My Zsh` theme.
+
+Plugin functions:
+
+- `git`: Oh My Zsh Git aliases and Git completion helpers
+- `zsh-autosuggestions`: shows gray command suggestions while typing, based on history and completions
+- `zsh-syntax-highlighting`: highlights valid and invalid shell syntax while typing
+
+Reload shell after changes: `exec zsh`
+
 ## xterm-256
 
 ```bash
