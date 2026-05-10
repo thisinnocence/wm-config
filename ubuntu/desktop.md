@@ -1,11 +1,6 @@
 # Ubuntu 桌面配置
 
-这份文件记录这台 Ubuntu GNOME Wayland 桌面上的用户级与系统级设置。
-
-```text
 OS: Ubuntu 26.04 LTS
-Desktop session: GNOME Wayland
-```
 
 ## Powner 配置
 
@@ -17,53 +12,51 @@ Desktop session: GNOME Wayland
 
 如果 `Win + L` 锁屏后无法唤醒，先做最小修复：
 
-- 关闭 `org.gnome.mutter experimental-features`
-- 这个桌面之前开过 `scale-monitor-framebuffer` 和 `xwayland-native-scaling`
-- 日志里 GNOME 已把这两个 feature 识别为 `Unknown experimental feature`
-- 关闭后注销重登，再测试锁屏和唤醒
-
-对应命令：
-
 ```bash
+# 关闭 org.gnome.mutter experimental-features
+# - scale-monitor-framebuffer
+# - xwayland-native-scaling
+# 日志里 GNOME 已把这两个 feature 识别为 `Unknown experimental feature`
+# 关闭后注销重登，再测试锁屏和唤醒
 gsettings set org.gnome.mutter experimental-features "[]"
 gsettings get org.gnome.mutter experimental-features
 ```
 
 说明：
 
-- 这类问题更像 `GNOME Wayland + NVIDIA + mutter` 的图形会话不稳定，不是单纯的快捷键问题
+- 这类问题 `GNOME Wayland + NVIDIA + mutter` 的图形会话不稳定
 - 如果关掉 experimental features 仍复现，再继续排查 GNOME extensions
 - `scale-monitor-framebuffer` 主要用于分数缩放 / HiDPI 的显示策略，把缩放更多交给 framebuffer 处理
 - `xwayland-native-scaling` 主要用于让 Xwayland 应用更“原生”地参与缩放，但也更容易影响老式 X11 应用行为
-- 这台机器平时不需要依赖这些实验特性，保持关闭更稳
 
 ## 缩放显示
 
-- 分辨率： 125
-- 字体放大： 1.1
+分辨率刷新率调整推荐：
 
-分辨率太大影响UI的美观程度，字体通过 `sudo apt install gnome-tweaks` 配置即可。
+- 显示器：`DP-3 PHL 27M2N5810`
+- 分辨率：`3840x2160 @ 160Hz`
+- 显示缩放：`125%`
 
 ## 字体配置
 
-当前实际值：
-
-- UI 字体：`Ubuntu Sans 11`
-- 文档字体：`Sans 11`
-- 等宽字体：`Ubuntu Sans Mono 11`
-- 字体放大：`1.1`
-- Hinting：`slight`
-- Antialiasing：`rgba`
-- 系统中文 sans fallback：`Noto Sans CJK SC`
-- 系统中文 serif fallback：`Noto Serif CJK SC`
-
-安装字体命令说明：
+安装 cjk(Chinese / Japanese / Korean) 中文字体
 
 ```bash
 sudo apt install fonts-noto-cjk fonts-noto-cjk-extra
 sudo apt install fonts-jetbrains-mono
 fc-cache -fv
 ```
+
+字体缩放直接用 `GNOME Tweaks -> Fonts -> Scaling Factor` 调整字体缩放
+
+- UI 字体：`Ubuntu Sans 11`
+- 文档字体：`Sans 11`
+- 等宽字体：`Ubuntu Sans Mono 11`
+- 字体放大：`1.2`
+- Hinting：`slight`
+- Antialiasing：`rgba`
+- 系统中文 sans fallback：`Noto Sans CJK SC`
+- 系统中文 serif fallback：`Noto Serif CJK SC`
 
 ## 中文输入法
 
