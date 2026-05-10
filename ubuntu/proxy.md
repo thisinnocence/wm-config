@@ -1,14 +1,10 @@
-# Proxy
+# Proxy 配置
 
-## Proxy Behavior
+## Proxy 行为
 
-*Clash Verge Rev* is running locally and exposes a proxy listener on:
+*Clash Verge Rev* 在本机运行，默认提供监听 `127.0.0.1:7897`, 支持 HTTP、HTTPS 和 SOCKS5 代理协议。
 
-```text
-127.0.0.1:7897
-```
-
-The current shell environment has proxy variables set automatically, but when use Ghostty term app, should set mannually:
+默认中断 app 环境会自动设置 proxy variables，但使用 Ghostty terminal app 时，需要手动设置：
 
 ```bash
 proxy() {
@@ -31,38 +27,19 @@ unproxy() {
 }
 ```
 
-Expected behavior:
+默认行为：
 
-- `curl`, Git HTTPS, and many CLI tools can use these proxy environment variables
-- SSH does not automatically use these variables, so GitHub SSH is configured separately in `~/.ssh/config`
-- Apt has no apt-specific proxy config, so Ubuntu package downloads should go directly to the configured mirror
+- 很多CLI工具，如 curl、git(https) 会读取这些这些环境变量，自动走 Clash Verge 代理
+- SSH 不会自动读取这些环境变量，所以 GitHub SSH 需要在 `~/.ssh/config` 里单独配置
+- Apt 没有 apt-specific proxy config，所以 Ubuntu package 下载应直接走配置好的 mirror
 
-Checked apt proxy config, just use Aliyun mirror:
+## 针对 Github 的 SSH 代理
 
-```text
-No Acquire::http::Proxy
-No Acquire::https::Proxy
-```
+Github 的 SSH 已配置为使用本机 Clash Verge SOCKS5 proxy。SSH config 文件：
 
-Current intended routing:
+`vim ~/.ssh/config`
 
-```text
-GitHub SSH: through Clash Verge SOCKS5
-General shell tools: can use Clash Verge from proxy env
-Apt Ubuntu packages: direct to Aliyun mirror
-```
-
-## SSH And GitHub
-
-GitHub SSH was configured to use the local Clash Verge SOCKS5 proxy. SSH config file:
-
-```text
-~/.ssh/config
-```
-
-Config:
-
-```sshconfig
+```yaml
 Host github.com
   HostName github.com
   User git
@@ -72,7 +49,7 @@ Host github.com
   ProxyCommand nc -x 127.0.0.1:7897 -X 5 %h %p
 ```
 
-Verification command:
+验证命令：
 
 ```bash
 ssh -T git@github.com
