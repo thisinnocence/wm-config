@@ -1,6 +1,6 @@
-# git
+# Git
 
-## Add ssh-key
+## Git account
 
 ```bash
 git config --global user.name "your_name"
@@ -41,7 +41,7 @@ ssh-keygen -t ed25519 -C "your_email@example.com"
 
 ## Git delta
 
-`git delta` 是一个更现代化的 Git diff pager，提供更好的可读性和导航功能，可选配置：
+`git delta` 是一个更现代化的 Git diff pager，提供更好的可读性和导航功能，可选安装：
 
 通过 cargo 安装 `git delta`：
 
