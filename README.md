@@ -6,16 +6,15 @@ Directory layout:
 
 - `dev/`: shared development configuration for Git, tmux, Zsh, VS Code, Node.js, and Python
 - `ubuntu/`: bare-metal Ubuntu Desktop configuration, including dual boot, hardware, system, and network notes
-- `wsl2/`: WSL2-only configuration notes
 
 | tools | configuration                                                           |
 | ----- | ---------------------------------------------------------------------   |
 | vim   | <https://github.com/thisinnocence/vim>                                  |
-| git   | <https://github.com/thisinnocence/wm-config/blob/master/dev/git.md>     |
-| tmux  | <https://github.com/thisinnocence/wm-config/blob/master/dev/tmux.md>    |
-| zsh   | <https://github.com/thisinnocence/wm-config/blob/master/dev/zsh.md>     |
-| vscode| <https://github.com/thisinnocence/wm-config/blob/master/dev/vscode.md>  |
-| node  | <https://github.com/thisinnocence/wm-config/blob/master/dev/nodejs.md>  |
-| python| <https://github.com/thisinnocence/wm-config/blob/master/dev/python.md>  |
+| git   | [dev/git.md](dev/git.md)                                                |
+| tmux  | [dev/tmux.md](dev/tmux.md)                                              |
+| zsh   | [dev/zsh.md](dev/zsh.md)                                                |
+| vscode| [dev/vscode.md](dev/vscode.md)                                          |
+| node  | [dev/nodejs.md](dev/nodejs.md)                                          |
+| python| [dev/python.md](dev/python.md)                                          |
 
 Because Vim configuration is somewhat complex, I maintain the Vim configuration in a separate code repository.
