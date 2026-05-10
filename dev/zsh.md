@@ -1,10 +1,19 @@
 # zsh
 
-vim `~/.zshrc`
+## Theme and plugins
 
-Powerlevel10k is used as the `Oh My Zsh` theme.
+Use Powerlevel10k  as the `Oh My Zsh` theme.
 
-Plugin functions:
+Plugin functions, add the following lines to `~/.zshrc`, the plugins section:
+
+```bash
+# Oh My Zsh plugins
+plugins=(
+    git
+    zsh-autosuggestions
+    zsh-syntax-highlighting
+)
+```
 
 - `git`: Oh My Zsh Git aliases and Git completion helpers
 - `zsh-autosuggestions`: shows gray command suggestions while typing, based on history and completions
@@ -12,13 +21,14 @@ Plugin functions:
 
 Reload shell after changes: `exec zsh`
 
-## xterm-256
+## xterm
+
+For tmux to support 256 colors, add the following line to `~/.zshrc`:
 
 ```bash
+# echo $TERM to check, should be xterm-256color
 export TERM=xterm-256color
 ```
-
-Or just put tmux in plugin(). Use `echo $TERM` to check.
 
 ## Enable * wildcard
 
@@ -29,30 +39,4 @@ To resolve this, add the following configuration to `~/.zshrc`:
 ```bash
 # pass * to cmd
 setopt no_nomatch
-```
-
-## Plugins
-
-```bash
-plugins=(
-    git
-    tmux
-
-    # https://github.com/zsh-users/zsh-autosuggestions/blob/master/INSTALL.md#oh-my-zsh
-    zsh-autosuggestions
-
-    # sudo apt install fzf first
-    fzf
-
-    # https://github.com/zsh-users/zsh-syntax-highlighting/blob/master/INSTALL.md#with-a-plugin-manager
-    # Note: zsh-syntax-highlighting must be the last plugin sourced.
-    zsh-syntax-highlighting
-)
-
-# https://github.com/zsh-users/zsh-completions
-# Additional completions, add nextline before `source source $ZSH/oh-my-zsh.sh`
-fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
-
-source $ZSH/oh-my-zsh.sh
-
 ```
