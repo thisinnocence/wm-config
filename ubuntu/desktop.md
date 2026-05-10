@@ -2,277 +2,119 @@
 
 OS: Ubuntu 26.04 LTS
 
-## Powner 配置
+## Power 配置
 
 ### 电源配置
 
-功耗配置 balance 模式，settings 里可配置。否则会导致风扇太吵。
+功耗模式用 `Settings -> Power -> Power Mode` 调成 `Balanced`，否则风扇容易太吵。
 
 ### 锁屏唤醒
 
-如果 `Win + L` 锁屏后无法唤醒，先做最小修复：
+如果 `Win + L` 锁屏后无法唤醒，先关闭 Mutter experimental features，注销重登后再测试：
 
 ```bash
-# 关闭 org.gnome.mutter experimental-features
-# - scale-monitor-framebuffer
-# - xwayland-native-scaling
-# 日志里 GNOME 已把这两个 feature 识别为 `Unknown experimental feature`
-# 关闭后注销重登，再测试锁屏和唤醒
 gsettings set org.gnome.mutter experimental-features "[]"
 gsettings get org.gnome.mutter experimental-features
 ```
 
-说明：
+这类问题通常是 `GNOME Wayland + NVIDIA + mutter` 的图形会话不稳定；如果仍复现，再排查 GNOME Extensions。
 
-- 这类问题 `GNOME Wayland + NVIDIA + mutter` 的图形会话不稳定
-- 如果关掉 experimental features 仍复现，再继续排查 GNOME extensions
-- `scale-monitor-framebuffer` 主要用于分数缩放 / HiDPI 的显示策略，把缩放更多交给 framebuffer 处理
-- `xwayland-native-scaling` 主要用于让 Xwayland 应用更“原生”地参与缩放，但也更容易影响老式 X11 应用行为
+## 显示配置
 
-## 缩放显示
+### 分辨率和刷新率
 
-分辨率刷新率调整推荐：
+分辨率、刷新率和显示缩放直接用 `Settings -> Displays` 调整：
 
 - 显示器：`DP-3 PHL 27M2N5810`
 - 分辨率：`3840x2160 @ 160Hz`
 - 显示缩放：`125%`
 
-## 字体配置
+### 字体配置
 
-安装 cjk(Chinese / Japanese / Korean) 中文字体
+安装 CJK(Chinese/Japanese/Korean) 中文字体和 JetBrains Mono：
 
 ```bash
+# install fonts
 sudo apt install fonts-noto-cjk fonts-noto-cjk-extra
 sudo apt install fonts-jetbrains-mono
 fc-cache -fv
 ```
 
-字体缩放直接用 `GNOME Tweaks -> Fonts -> Scaling Factor` 调整字体缩放
+字体渲染和缩放等直接用 `GNOME Tweaks -> Fonts` 调整：
 
 - UI 字体：`Ubuntu Sans 11`
 - 文档字体：`Sans 11`
 - 等宽字体：`Ubuntu Sans Mono 11`
 - 字体放大：`1.2`
-- Hinting：`slight`
-- Antialiasing：`rgba`
+- Hinting(字体微调/清晰度)：`slight`，适合高 DPI 屏幕，字形更自然，不会被强行像素对齐得太硬
+- Antialiasing(抗锯齿)：`rgba`，适合普通 LCD / LED 背光 LCD 显示器
 - 系统中文 sans fallback：`Noto Sans CJK SC`
 - 系统中文 serif fallback：`Noto Serif CJK SC`
 
 ## 中文输入法
 
-当前桌面中文输入法使用 `Fcitx5 + Pinyin`。
-
-已安装的主要组件：
-
-- `fcitx5`
-- `fcitx5-chinese-addons`
-- `fcitx5-pinyin`
-- `fcitx5-config-qt`
-- `fcitx5-frontend-all`
-
-当前输入法框架：
-
-```text
-~/.xinputrc
-run_im fcitx5
-```
-
-GNOME Wayland 下按 Fcitx 官方建议配置环境变量。
-
-配置文件：
-
-```text
-~/.pam_environment
-```
-
-内容：
-
-```text
-XMODIFIERS  DEFAULT=@im=fcitx
-QT_IM_MODULE  DEFAULT=fcitx
-QT_IM_MODULES  DEFAULT=wayland;fcitx
-```
-
-同步配置文件：
-
-```text
-~/.config/environment.d/im-fcitx5.conf
-```
-
-内容：
-
-```text
-XMODIFIERS=@im=fcitx
-QT_IM_MODULE=fcitx
-QT_IM_MODULES=wayland;fcitx
-```
-
-Fcitx5 使用用户级 autostart 启动：
-
-```text
-~/.config/autostart/org.fcitx.Fcitx5.desktop
-```
-
-GNOME Wayland 下候选框位置依赖 `Kimpanel`，已安装并启用这个 GNOME Shell extension：
-
-```text
-~/.local/share/gnome-shell/extensions/kimpanel@kde.org
-```
-
-当前启用的 GNOME Shell extension 包含：
-
-```text
-kimpanel@kde.org
-```
-
-安装与切换命令：
+当前桌面中文输入法使用 `Fcitx5 + Pinyin`, 安装和切换：
 
 ```bash
-sudo apt update
+# 安装 Fcitx5 输入法框架，中文拼音/五笔支持，图形配置界面，各类应用兼容层
 sudo apt install -y fcitx5 fcitx5-chinese-addons fcitx5-config-qt fcitx5-frontend-all
 im-config -n fcitx5
-cp /usr/share/applications/org.fcitx.Fcitx5.desktop ~/.config/autostart/org.fcitx.Fcitx5.desktop
 ```
 
-安装 `Kimpanel`：
-
-```bash
-wget -O /tmp/kimpanel.shell-extension.zip 'https://extensions.gnome.org/review/download/69345.shell-extension.zip'
-gnome-extensions install --force /tmp/kimpanel.shell-extension.zip
-gnome-extensions enable kimpanel@kde.org
-```
-
-如果 `gnome-extensions enable` 在当前会话里找不到新扩展，可以先把它加入 enabled list，注销后重新登录：
-
-```bash
-gsettings get org.gnome.shell enabled-extensions
-gsettings set org.gnome.shell enabled-extensions "['ding@rastersoft.com', 'ubuntu-dock@ubuntu.com', 'tiling-assistant@ubuntu.com', 'snapd-search-provider@canonical.com', 'web-search-provider@ubuntu.com', 'kimpanel@kde.org']"
-```
-
-登录后打开 `Fcitx 5 Configuration`，添加：
-
-- `Pinyin`
-
-候选框与预编辑区的额外配置：
+注销重登后打开 `Fcitx 5 Configuration`，添加 `Pinyin`，在 GNOME Wayland 下候选框位置依赖 `Kimpanel`，
+用 `Extension Manager` 或 GNOME Extensions 网站安装并启用 `Kimpanel`， 然后设置：
 
 - 当前候选框字体由 `Kimpanel` 单独控制，不跟系统 UI 字体完全绑定
+- 如果候选框字体改大后只看到汉字、看不到拼音候选，在 `Fcitx 5 Configuration -> Global Options` 里关闭 `Client Preedit`
+- 改完输入法配置后如果没有立即生效，注销重登或重启 `fcitx5`
 - 当前实际字体值：`Noto Sans CJK SC 12`
-- 调整命令：
-
-```bash
-gsettings --schemadir ~/.local/share/gnome-shell/extensions/kimpanel@kde.org/schemas get org.gnome.shell.extensions.kimpanel font
-gsettings --schemadir ~/.local/share/gnome-shell/extensions/kimpanel@kde.org/schemas set org.gnome.shell.extensions.kimpanel font 'Noto Sans CJK SC 12'
-```
-
-- 如果改完候选框字体后没有立即生效，重启 `fcitx5`
-
-```bash
-pkill fcitx5
-fcitx5 -d
-```
-
-预编辑区排障记录：
-
-- 现象：候选框字体改大后，候选框里只看到汉字，看不到拼音串
-- 当前最终有效做法：关闭 `client preedit`
-- 配置文件：
-
-```text
-~/.config/fcitx5/config
-```
-
-- 当前实际值：
-
-```text
-PreeditEnabledByDefault=False
-```
-
-- 修改后重启 `fcitx5`，拼音预编辑显示恢复正常
-- 这套 `GNOME Wayland + Fcitx5 + Kimpanel` 里，是否显示拼音串不只取决于 `pinyin.conf`，还和 `client preedit` 的显示位置有关
 
 常见问题：
 
-- `VS Code` 如果用 `snap` 版，`GNOME Wayland + Fcitx5` 下输入法兼容性比 `.deb` 版更容易出问题
-- `fcitx5-diagnose` 显示当前桌面环境里仍然混有 `IBus/XIM` 痕迹，因此 Electron 应用里的输入法行为可能不稳定
-- `Fcitx5` 的简繁转换会绑定 `Ctrl+Shift+F`，这和 `VS Code` 默认全局搜索快捷键冲突
+- `VS Code` 要用 `.deb` 版，即用 apt install 的方式，因为 snap 版本有输入法兼容性问题
+- `Fcitx5` 的简繁转换会绑定 `Ctrl+Shift+F`，这和 `VS Code` 默认全局搜索快捷键冲突, 可在GUI里修改
 
 ## Ubuntu Dock
 
 这里列出必须通过命令或配置方式处理的项。像 dock 位置、是否自动隐藏、是否 panel mode 这类常见选项，可以直接在 Ubuntu Desktop 的 GUI 设置里调整。
 
-### `click-action`
-
-控制点击 dock 上应用图标时的行为。这个值不放在 Ubuntu Desktop 的常规 GUI 设置里，因此保留命令配置方式。
-
-当前值：`minimize-or-previews` 含义：
-
-- 如果应用当前只有一个活动窗口，点击后可以最小化
-- 如果应用有多个窗口，点击后可以显示窗口预览
-- 这种行为比 Ubuntu 默认设置更接近 macOS Dock
-
-设置命令：
+控制点击 dock 上应用图标时的行为。这个值不在 Ubuntu Desktop 的常规 GUI 设置里，需要命令配置：
 
 ```bash
+# 配置 `minimize-or-previews` 含义：
+#    - 如果应用当前只有一个活动窗口，点击后可以最小化
+#    - 如果应用有多个窗口，点击后可以显示窗口预览
+#    - 这种行为比 Ubuntu 默认设置更接近 macOS Dock
 gsettings set org.gnome.shell.extensions.dash-to-dock click-action minimize-or-previews
-```
 
-运行下面这个命令可以检查当前的 `click-action`：
-
-```bash
+# 检查当前的 `click-action`
 gsettings get org.gnome.shell.extensions.dash-to-dock click-action
-```
 
-### 恢复 Ubuntu 默认
-
-如果想恢复 `click-action` 的默认值，可以执行：
-
-```bash
+# 恢复 `click-action` 默认方法
 gsettings reset org.gnome.shell.extensions.dash-to-dock click-action
 ```
 
-如果 dock 没有立即更新： 注销后重新登录
-
 ## Flameshot 截图
 
-当前使用 GNOME 自定义全局快捷键调用 `flameshot`。
+使用 Flameshot 截图，在 `Settings -> Keyboard -> View and Customize Shortcuts -> Custom Shortcuts` 添加快捷键：
 
-快捷键：
-
-- `F1`：截图
-
-对应命令：
-
-```text
-F1 -> flameshot gui
-```
-
-GNOME custom keybindings：
-
-```text
-/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/
-```
+- 快捷键：`F1`
+- 命令：`flameshot gui`
 
 PS: `Flameshot` 的 `--pin` 在当前 `GNOME Wayland` 还不能很好的兼容。
 
 ## Ghostty 终端
 
-建议terminal: `Ghostty`
-
-定位：
+选择 Ghostty 有如下原因：
 
 - 原生 GUI 终端模拟器，Linux 下支持 `Wayland`
 - 默认配置就能正常使用，不需要像传统终端那样额外调很多参数
 - 适合替代 `gnome-terminal` 作为日常主终端
+- 在 TUI 里可以贴图，方便使用 codex 等软件
 
-配置文件位置：
+配置文件 `~/.config/ghostty/config.ghostty` ，推荐配置：
 
-```text
-~/.config/ghostty/config.ghostty
-```
-
-当前实际配置：
-
-```text
+```bash
 # 窗口初始大小，单位是终端网格，不是像素
 window-width = 180
 window-height = 56
@@ -284,30 +126,3 @@ theme = Ubuntu
 cursor-style = block
 cursor-style-blink = false
 ```
-
-默认全屏快捷键是 `Ctrl + Enter`，不是 `F11`。
-
-## Codex CLI 贴图
-
-在 GNOME Wayland 下，`Codex CLI` 的 TUI 粘贴图片功能依赖终端和当前图形会话的剪贴板访问。
-
-之前遇到过的问题：
-
-```text
-Failed to paste image: clipboard unavailable: Unknown error while interacting with the clipboard: X11 server connection timed out because it was unreachable
-```
-
-已安装的剪贴板工具：
-
-- `wl-clipboard`
-- `xclip`
-
-当前验证结果：
-
-- 使用 `Ghostty` 图形终端启动 `codex` 时，可以正常粘贴图片
-- 使用默认权限模式即可，不需要把 `codex` 默认改成 `danger-full-access`
-
-当前结论：
-
-- 贴图能力不只是 `codex` 权限配置问题，也和终端本身以及它对桌面图形会话剪贴板的接入方式有关
-- 目前这台机器上，`Ghostty App` 是已验证可用的方案
