@@ -5,7 +5,9 @@
 ```bash
 git config --global user.name "your_name"
 git config --global user.email "your_email@example.com"
-ssh-keygen -t rsa -C "your_email@example.com"
+
+# 建议使用 ed25519 算法生成 SSH key，安全性更高，且生成速度更快，更短的密钥长度
+ssh-keygen -t ed25519 -C "your_email@example.com"
 ```
 
 ## Git config
@@ -13,12 +15,6 @@ ssh-keygen -t rsa -C "your_email@example.com"
 `vim ~/.gitconfig`
 
 ```ini
-[http]
-    sslVerify = false
-    #proxy = https://127.0.0.1:10809
-[https]
-    sslVerify = false
-    #proxy = https://127.0.0.1:10809
 [alias]
     b = branch --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset) - %(contents:subject) %(color:green)(%(committerdate:relative)) [%(authorname)]' --sort=-committerdate
     d = diff
@@ -41,37 +37,44 @@ ssh-keygen -t rsa -C "your_email@example.com"
     log = false
 ```
 
-## Reference
-
-- <https://snyk.io/blog/10-git-aliases-for-faster-and-productive-git-workflow>
+参考： <https://snyk.io/blog/10-git-aliases-for-faster-and-productive-git-workflow>
 
 ## Git delta
 
-`git delta` is configured as the global Git pager.
+`git delta` 是一个更现代化的 Git diff pager，提供更好的可读性和导航功能，可选配置：
 
-Current global config:
+通过 cargo 安装 `git delta`：
+
+```bash
+cargo install git-delta
+```
+
+在 `~/.gitconfig` 中添加以下配置：
 
 ```ini
 [core]
     pager = delta
-[pager]
-    diff = false
-    log = false
+
+[interactive]
+    diffFilter = delta --color-only
+
 [delta]
     navigate = true
     side-by-side = true
+    line-numbers = true
+
+[merge]
+    conflictstyle = zdiff3
+
+[diff]
+    colorMoved = default
 ```
 
-Meaning:
+说明：
 
-- `core.pager = delta`: use `delta` as the default pager for Git output
-- `pager.diff = false`: do not force `git diff` through pager config, avoid double-pager conflicts
-- `pager.log = false`: do not force `git log` through pager config, let `core.pager` handle normal cases
-- `delta.navigate = true`: allow easier navigation in long diff output
-- `delta.side-by-side = true`: show side-by-side diff when terminal width is enough
-
-Check command:
-
-```bash
-git config --global --get-regexp '^delta\\.|^interactive\\.diffFilter$|^pager\\.(diff|log|reflog|show)$|^core\\.pager$'
-```
+- `pager = delta` 将 Git diff 输出通过 delta 进行分页显示，提供更好的格式化和颜色支持
+- `interactive.diffFilter` 配置允许在交互式命令中使用 delta 的颜色输出
+- `navigate = true` 允许在 diff 输出中使用键盘导航
+- `side-by-side = true` 以并排方式显示 diff，便于比较
+- `line-numbers = true` 显示行号，帮助定位修改位置
+- `conflictstyle = zdiff3` 在合并冲突时使用更清
