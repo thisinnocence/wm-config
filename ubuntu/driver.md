@@ -1,4 +1,4 @@
-# Ubuntu Driver And Display Status
+# Ubuntu driver
 
 Ubuntu 26.04 LTS with GNOME Wayland only.
 

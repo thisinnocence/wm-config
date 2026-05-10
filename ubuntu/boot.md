@@ -1,4 +1,4 @@
-# Dual Boot 启动配置
+# 双系统启动配置
 
 这台机器是 `Windows + Ubuntu` 双系统。当前最终效果是：
 
@@ -263,8 +263,6 @@ sudo update-grub
 ```
 
 注意：当前菜单里 Ubuntu 是第 1 项，所以 `GRUB_DEFAULT=1` 表示默认进入 Ubuntu。
-
-
 
 ## 启动问题排查
 

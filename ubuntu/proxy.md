@@ -1,4 +1,4 @@
-# Ubuntu Network
+# Proxy
 
 ## Proxy Behavior
 
