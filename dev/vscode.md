@@ -40,19 +40,19 @@
     "vim.incsearch": true,
     "vim.hlsearch": true,
 
+    // font
     "editor.fontFamily": "'JetBrains Mono', 'Noto Sans Mono CJK SC', 'Microsoft YaHei', monospace",
     "editor.fontSize": 15,
     "editor.lineHeight": 21,
     "editor.fontLigatures": false,
     "terminal.integrated.fontFamily": "'JetBrains Mono', 'Noto Sans Mono CJK SC', monospace",
     "terminal.integrated.fontSize": 14,
-    "markdown.preview.fontFamily": "'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif",
-    "markdown-preview-github-styles.colorTheme": "light",
 
     // clang-format
     "files.associations": {
         ".clang-format": "yaml"
     },
+
     // conflict with clangd
     "C_Cpp.intelliSenseEngine": "disabled",
 
