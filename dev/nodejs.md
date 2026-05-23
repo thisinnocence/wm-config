@@ -4,35 +4,28 @@
 
 node.js 官方和社区提供了多种安装方式。本环境选择 `fnm + pnpm`，主要是为了让 node.js runtime、全局 CLI 和项目依赖都尽量维护在用户目录下，不修改系统目录的 nodejs 环境。
 
-- `fnm` 负责切换 node.js 版本，相比 `nvm` 这类 script 工具，有更快的版本切换速度；
-- `pnpm` 负责依赖和用户级全局 CLI，适合个人 Linux 开发机长期维护。
-
-这不是唯一的最佳方案，如果目标是严格跟随官网最少变量，直接使用官方推荐的 `npm` 命令也可以，如果目标是团队一致性，应优先跟随项目里的 `.nvmrc/packageManager` 或团队规范。
-
-`fnm` 安装在用户目录下。当前 binary 路径：
-
-```text
-~/.local/share/fnm/fnm
-```
-
-原则：
-
-- 使用 `fnm` 管理 node.js runtime
-- node.js 版本保留在用户目录下，不写入系统目录
-- 项目依赖优先使用项目自己的 package manager workflow
-
-常用命令：
+- `fnm` 负责切换 node.js 版本，相比 `nvm` 这类 script 工具，有更快的版本切换速度;
+- `pnpm` 负责依赖和用户级全局 CLI，适合个人 Linux 开发机长期维护;
+- `corepack` 负责管理 `pnpm`、`yarn` 这类包管理器的版本解析;
 
 ```bash
-# 查找可用的 node.js 版本
+# node
+fnm install --lts --use
 fnm list
+fnm current
 
-# 切换当前 shell 的 node.js runtime，自动安装缺失的版本
-# 后续在这个 shell 里运行的全局 CLI 安装和项目命令都会使用该版本
-fnm use --install-if-missing 24
+# 指定大版本
+fnm use --install-if-missing 24  # 当前 shell 使用 24；缺失时安装到当前用户目录
+fnm default 24                   # 设置当前用户默认 node.js 版本
+
+# corepack
+corepack enable
+
+# 在项目目录里固定 pnpm 版本，会写入 package.json 的 packageManager
+corepack use pnpm@latest
 ```
 
-`fnm` 由 shell 配置初始化。打开新的 shell 后，应自动进入当前配置的 node.js 版本。
+这不是唯一的最佳方案，如果目标是严格跟随官网最少变量，直接使用官方推荐的 `npm` 命令也可以，如果目标是团队一致性，应优先跟随项目里的 `.nvmrc/packageManager` 或团队规范。
 
 `pnpm` 源的 registry 配置：
 
