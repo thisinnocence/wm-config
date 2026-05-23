@@ -38,41 +38,61 @@ gsettings get org.gnome.mutter experimental-features
 sudo apt install fonts-noto-cjk fonts-noto-cjk-extra
 sudo apt install fonts-jetbrains-mono
 fc-cache -fv
+
+# check fonts
+fc-match "Noto Sans CJK SC"
+fc-match "Noto Serif CJK SC"
+fc-match "JetBrains Mono"
 ```
+
+- 系统中文 sans fallback：`Noto Sans CJK SC`
+- 系统中文 serif fallback：`Noto Serif CJK SC`
 
 字体渲染和缩放等直接用 `GNOME Tweaks -> Fonts` 调整：
 
 - UI 字体：`Ubuntu Sans 11`
 - 文档字体：`Sans 11`
-- 等宽字体：`Ubuntu Sans Mono 11`
-- 字体放大：`1.2`
-- Hinting(字体微调/清晰度)：`slight`，适合高 DPI 屏幕，字形更自然，不会被强行像素对齐得太硬
+- 等宽字体：`JetBrains Mono 11`
+- Scaling Factor：`1.20`
+- Hinting(字体微调/清晰度)：`Slight`，适合高 DPI 屏幕，字形更自然，不会被强行像素对齐得太硬
 - Antialiasing(抗锯齿)：`rgba`，适合普通 LCD / LED 背光 LCD 显示器
-- 系统中文 sans fallback：`Noto Sans CJK SC`
-- 系统中文 serif fallback：`Noto Serif CJK SC`
+
+```bash
+# check fonts cfg
+gsettings get org.gnome.desktop.interface font-name
+gsettings get org.gnome.desktop.interface document-font-name
+gsettings get org.gnome.desktop.interface monospace-font-name
+gsettings get org.gnome.desktop.interface text-scaling-factor
+gsettings get org.gnome.desktop.interface font-hinting
+gsettings get org.gnome.desktop.interface font-antialiasing
+```
 
 ## 中文输入法
 
-当前桌面中文输入法使用 `Fcitx5 + Pinyin`, 安装和切换：
+当前桌面中文输入法使用 Fcitx5 + Pinyin：
 
-```bash
-# 安装 Fcitx5 输入法框架，中文拼音/五笔支持，图形配置界面，各类应用兼容层
 sudo apt install -y fcitx5 fcitx5-chinese-addons fcitx5-config-qt fcitx5-frontend-all
 im-config -n fcitx5
-```
 
-注销重登后打开 `Fcitx 5 Configuration`，添加 `Pinyin`，在 GNOME Wayland 下候选框位置依赖 `Kimpanel`，
-用 `Extension Manager` 或 GNOME Extensions 网站安装并启用 `Kimpanel`， 然后设置：
+注销重登后打开 Fcitx 5 Configuration，添加 Pinyin。
+如果列表中看不到 Pinyin，取消 Only Show Current Language 后再搜索。
 
-- 当前候选框字体由 `Kimpanel` 单独控制，不跟系统 UI 字体完全绑定
-- 如果候选框字体改大后只看到汉字、看不到拼音候选，在 `Fcitx 5 Configuration -> Global Options` 里关闭 `Client Preedit`
-- 改完输入法配置后如果没有立即生效，注销重登或重启 `fcitx5`
-- 当前实际字体值：`Noto Sans CJK SC 12`
+GNOME Wayland 下，如果候选框位置异常或不跟随光标，可安装并启用 Kimpanel / Input Method Panel 类 GNOME 扩展。
+
+当前候选框字体由 Kimpanel 单独控制，不完全跟随 GNOME Tweaks 的系统 UI 字体。
+当前实际字体值：Noto Sans CJK SC 12。
+
+如果候选框字体改大后只看到汉字、看不到拼音预编辑串，可在：
+Fcitx 5 Configuration -> Global Options
+中关闭 Client Preedit。
+
+修改输入法配置后如果没有立即生效，可注销重登，或执行：
+fcitx5 -r
 
 常见问题：
 
-- `VS Code` 要用 `.deb` 版，即用 apt install 的方式，因为 snap 版本有输入法兼容性问题
-- `Fcitx5` 的简繁转换会绑定 `Ctrl+Shift+F`，这和 `VS Code` 默认全局搜索快捷键冲突, 可在GUI里修改
+- VS Code 建议使用 Microsoft 官方 .deb / apt 源版本，不建议使用 snap 版。
+- Fcitx5 简繁转换快捷键可能占用 Ctrl+Shift+F，与 VS Code 全局搜索冲突，可在 Fcitx5 GUI 配置中修改或禁用。
 
 ## Ubuntu Dock
 
