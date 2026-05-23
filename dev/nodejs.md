@@ -2,7 +2,8 @@
 
 ## fnm + pnpm 方案
 
-node.js 官方和社区提供了多种安装方式。本环境选择 `fnm + pnpm`，主要是为了让 node.js runtime、全局 CLI 和项目依赖都尽量维护在用户目录下，不修改系统目录的 nodejs 环境。
+node.js 官方和社区提供了多种安装方式。本环境选择 `fnm + pnpm`，主要是为了让 node.js runtime、全局 CLI 和
+项目依赖都尽量维护在用户目录下，不修改系统目录的 nodejs 环境。
 
 - `fnm` 负责切换 node.js 版本，相比 `nvm` 这类 script 工具，有更快的版本切换速度;
 - `pnpm` 负责依赖和用户级全局 CLI，适合个人 Linux 开发机长期维护;
@@ -25,7 +26,8 @@ corepack enable
 corepack use pnpm@latest
 ```
 
-这不是唯一的最佳方案，如果目标是严格跟随官网最少变量，直接使用官方推荐的 `npm` 命令也可以，如果目标是团队一致性，应优先跟随项目里的 `.nvmrc/packageManager` 或团队规范。
+这不是唯一的最佳方案，如果目标是严格跟随官网最少变量，直接使用官方推荐的 `npm` 命令也可以，如果目标是团队一致性，
+应优先跟随项目里的 `.nvmrc/packageManager` 或团队规范。
 
 `pnpm` 源的 registry 配置：
 
