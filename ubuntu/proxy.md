@@ -6,6 +6,8 @@
 
 部分终端 app 会自动继承 proxy variables；Ghostty 里需要时可以手动开启：
 
+下面配置可以加入 `~/.zshrc`，需要代理时执行 `proxy`，不需要时执行 `unproxy`。
+
 ```bash
 proxy() {
   export HTTP_PROXY="http://127.0.0.1:7897"
@@ -38,6 +40,7 @@ unproxy() {
 安装 OpenBSD netcat：
 
 ```bash
+# netcat-openbsd 提供 nc 命令，SSH ProxyCommand 用它连接 Clash Verge 的 SOCKS5 proxy
 sudo apt install netcat-openbsd
 ```
 

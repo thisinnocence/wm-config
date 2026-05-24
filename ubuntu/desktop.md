@@ -26,6 +26,8 @@ Scale: 125%
 安装字体：
 
 ```bash
+# CJK = Chinese / Japanese / Korean，用于中文、日文、韩文字体 fallback
+# Noto 是 Google 的开源字体家族，Noto CJK 覆盖中日韩字符
 sudo apt install fonts-noto-cjk fonts-noto-cjk-extra fonts-jetbrains-mono
 fc-cache -fv
 ```
