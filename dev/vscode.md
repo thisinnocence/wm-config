@@ -1,6 +1,6 @@
 # vscode
 
-```js
+```jsonc
 {
     // common
     "window.title": "${dirty}${activeEditorMedium}${separator}${rootName}${separator}${profileName}${separator}${appName}",
@@ -17,7 +17,7 @@
         "**/__pycache__": true,
         "**/node_modules": true,
         "**/compile_commands.json": true,
-    }
+    },
 
     // vim 
     "vim.handleKeys": {

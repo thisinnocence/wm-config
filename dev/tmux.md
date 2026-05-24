@@ -1,8 +1,8 @@
 # tmux
 
-## 个人配置
+## 安装
 
-本机使用 `tmux` 管理长期终端会话、窗口和 pane。配置目标：
+使用 `tmux` 管理长期终端会话、窗口和 pane, 配置目标：
 
 - 保留默认 prefix，降低和远程环境、服务器环境的差异
 - 使用 vim 风格 copy mode
@@ -10,34 +10,16 @@
 - 新建 window 和 pane 时继承当前路径
 - 提供快速 reload 和保存 pane history 的快捷键
 
-## 安装和检查
+安装：
 
 ```bash
 sudo apt install tmux
 tmux -V
 ```
 
-当前本机版本：
+## 配置
 
-```text
-tmux 3.6
-```
-
-编辑配置：
-
-```bash
-vim ~/.tmux.conf
-```
-
-修改后可在 tmux 内执行：
-
-```bash
-tmux source-file ~/.tmux.conf
-```
-
-也可以使用本文配置里的 `prefix + r` 重新加载。
-
-## `~/.tmux.conf`
+`vim ~/.tmux.conf`
 
 ```bash
 # Use vim key bindings in copy mode, default is emacs
@@ -86,9 +68,11 @@ bind-key r source-file ~/.tmux.conf \; display-message "Tmux config reloaded!"
 bind-key P command-prompt -p "save history to file:" -I "~/tmux.log" "capture-pane -S -65536; save-buffer %1; delete-buffer"
 ```
 
-## 常用快捷键
+## 注意
 
-这里的 `prefix` 是 tmux 默认的 `Ctrl+b`。
+### 快捷键
+
+这里的 `prefix` 是 tmux 默认的 `ctrl + b`
 
 ```text
 Alt + Arrow   切换 pane
@@ -100,9 +84,10 @@ prefix + r    重新加载 ~/.tmux.conf
 prefix + P    保存当前 pane history 到文件
 ```
 
-`prefix + P` 适合在排查问题、保存命令输出或记录远程会话现场时使用。默认文件是 `~/tmux.log`，执行时可以在提示里改成其他路径。
+`prefix + P` 适合在排查问题、保存命令输出或记录远程会话现场时使用。
+默认文件是 `~/tmux.log`，执行时可以在提示里改成其他路径。
 
-## true color 检查
+### true color 检查
 
 外层终端的 `$TERM` 会影响 tmux 的 true color 判断。当前配置假设外层终端使用 `xterm-256color` 兼容能力。
 
