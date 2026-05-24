@@ -1,10 +1,10 @@
 # zsh
 
-## Theme and plugins
+## Theme 和 plugins
 
-Use Powerlevel10k  as the `Oh My Zsh` theme.
+`Oh My Zsh` theme 使用 Powerlevel10k。
 
-Plugin functions, add the following lines to `~/.zshrc`, the plugins section:
+在 `~/.zshrc` 的 plugins 段落加入：
 
 ```bash
 # Oh My Zsh plugins
@@ -15,28 +15,33 @@ plugins=(
 )
 ```
 
-- `git`: Oh My Zsh Git aliases and Git completion helpers
-- `zsh-autosuggestions`: shows gray command suggestions while typing, based on history and completions
-- `zsh-syntax-highlighting`: highlights valid and invalid shell syntax while typing
+- `git`: 提供 `Oh My Zsh` Git aliases 和 Git completion helpers
+- `zsh-autosuggestions`: 根据 history 和 completions，在输入时显示灰色命令建议
+- `zsh-syntax-highlighting`: 输入时高亮有效和无效的 shell syntax
 
-Reload shell after changes: `exec zsh`
+修改后重新加载 shell：
+
+```bash
+exec zsh
+```
 
 ## xterm
 
-For tmux to support 256 colors, add the following line to `~/.zshrc`:
+为了让 tmux 支持 256 colors，在 `~/.zshrc` 中加入：
 
 ```bash
-# echo $TERM to check, should be xterm-256color
+# echo $TERM 检查，期望值是 xterm-256color
 export TERM=xterm-256color
 ```
 
-## Enable * wildcard
+## 启用 `*` wildcard
 
-When using `grep key --include=*.c` in zsh, you may encounter zsh:
-no matches found error. By default, zsh always automatically expands `*.`
-To resolve this, add the following configuration to `~/.zshrc`:
+在 zsh 中执行 `grep key --include=*.c` 这类命令时，可能遇到 `zsh: no matches found`。
+这是因为 zsh 默认会尝试展开 `*` wildcard，如果当前目录下没有匹配项，就会直接报错。
+
+如果希望把 `*` 原样传给命令处理，在 `~/.zshrc` 中加入：
 
 ```bash
-# pass * to cmd
+# 把没有匹配到的 wildcard 原样传给命令
 setopt no_nomatch
 ```
