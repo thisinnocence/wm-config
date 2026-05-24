@@ -9,13 +9,25 @@ node.js 官方和社区提供了多种安装方式。本环境选择 `fnm + pnpm
 - `corepack` 管理 `pnpm` 版本选择，可跟随项目的 `packageManager` 声明;
 - `pnpm` 管理项目依赖和用户级全局 CLI，避免污染系统目录;
 
+先安装并初始化 `fnm`：
+
+```bash
+# 安装 fnm；也可以改用系统包管理器或发行版推荐方式安装
+curl -fsSL https://fnm.vercel.app/install | bash
+
+# 将下面一行加入 ~/.zshrc，让新 shell 自动加载 fnm 管理的 node.js
+eval "$(fnm env --use-on-cd --shell zsh)"
+```
+
+修改 `~/.zshrc` 后重新打开 shell，或执行 `source ~/.zshrc`。
+
 ```bash
 # fnm
 fnm install --lts --use
 fnm list
 fnm current
-fnm use --install-if-missing 24  # 当前 shell 使用 24；缺失时安装到当前用户目录
-fnm default 24                   # 设置当前用户默认 node.js 版本
+fnm use --install-if-missing 24  # 当前 shell 使用当前 LTS major；缺失时安装到当前用户目录
+fnm default 24                   # 设置当前用户默认 node.js 版本；24 是 2026-05 的 LTS major
 
 # corepack
 corepack enable
@@ -86,6 +98,7 @@ pnpm list -g --depth 0 | grep pnpm  # 检查 pnpm 自己是否也作为用户级
 检查 `~/.zshrc` 的 pnpm 段落：
 
 ```bash
+# pnpm v11 的全局 CLI 可执行程序在 $PNPM_HOME/bin；如果 pnpm setup 生成了不同配置，以实际生成为准
 export PNPM_HOME="$HOME/.local/share/pnpm"
 case ":$PATH:" in
   *":$PNPM_HOME/bin:"*) ;;
@@ -100,6 +113,7 @@ esac
 node.js runtime 不做自动更新，需要升级时手动安装和切换：
 
 ```bash
+# 24 是 2026-05 的 LTS major；以后升级时换成当前 Node.js LTS major
 fnm install 24
 fnm default 24
 node -v
@@ -134,3 +148,9 @@ pnpm install -g <package>@latest
 pnpm install -g @openai/codex@latest
 codex --version
 ```
+
+## 参考
+
+- fnm 安装说明: <https://www.fnmnode.com/guide/install.html>
+- Node.js release 状态: <https://nodejs.org/en/about/previous-releases>
+- pnpm setup: <https://pnpm.io/cli/setup>
