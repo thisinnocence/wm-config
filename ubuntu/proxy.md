@@ -1,16 +1,16 @@
 # Proxy 配置
 
-## Proxy 行为
+这是可选配置。当前本机使用 Clash Verge Rev，监听 `127.0.0.1:7897`，支持 HTTP、HTTPS 和 SOCKS5。
 
-*Clash Verge Rev* 在本机运行，默认提供监听 `127.0.0.1:7897`, 支持 HTTP、HTTPS 和 SOCKS5 代理协议。
+## Shell proxy
 
-默认中断 app 环境会自动设置 proxy variables，但使用 Ghostty terminal app 时，需要手动设置：
+部分终端 app 会自动继承 proxy variables；Ghostty 里需要时可以手动开启：
 
 ```bash
 proxy() {
   export HTTP_PROXY="http://127.0.0.1:7897"
   export HTTPS_PROXY="http://127.0.0.1:7897"
-  export ALL_PROXY="socks://127.0.0.1:7897"
+  export ALL_PROXY="socks5://127.0.0.1:7897"
   export http_proxy="$HTTP_PROXY"
   export https_proxy="$HTTPS_PROXY"
   export all_proxy="$ALL_PROXY"
@@ -27,19 +27,23 @@ unproxy() {
 }
 ```
 
-默认行为：
+说明：
 
-- 很多CLI工具，如 curl、git(https) 会读取这些这些环境变量，自动走 Clash Verge 代理
-- SSH 不会自动读取这些环境变量，所以 GitHub SSH 需要在 `~/.ssh/config` 里单独配置
-- Apt 没有 apt-specific proxy config，所以 Ubuntu package 下载应直接走配置好的 mirror
+- `curl`、Git HTTPS 等 CLI 会读取这些环境变量
+- SSH 不会读取这些变量，GitHub SSH 需要单独配置
+- apt 当前不配置 proxy，直接使用 mirror
 
-## 针对 Github 的 SSH 代理
+## GitHub SSH proxy
 
-Github 的 SSH 已配置为使用本机 Clash Verge SOCKS5 proxy。SSH config 文件：
+安装 OpenBSD netcat：
 
-`vim ~/.ssh/config`
+```bash
+sudo apt install netcat-openbsd
+```
 
-```yaml
+编辑 `~/.ssh/config`：
+
+```sshconfig
 Host github.com
   HostName github.com
   User git
@@ -49,22 +53,29 @@ Host github.com
   ProxyCommand nc -x 127.0.0.1:7897 -X 5 %h %p
 ```
 
-验证命令：
+验证：
 
 ```bash
 ssh -T git@github.com
+```
+
+成功时会看到：
+
+```text
 Hi thisinnocence! You've successfully authenticated, but GitHub does not provide shell access.
 ```
 
-## Apt 源配置
+## apt source
 
-旧的 Ubuntu installer CD-ROM apt source 已禁用，因为它会导致 `apt-get update` 失败。
+旧的 installer CD-ROM source 已禁用：
 
-已禁用文件：`/etc/apt/sources.list.d/cdrom.sources.disabled`
+```text
+/etc/apt/sources.list.d/cdrom.sources.disabled
+```
 
-主软件源使用 Aliyun mirror，`resolute-security` 仍使用 Ubuntu 官方 security source：
+当前 Ubuntu source 使用 Aliyun mirror，security source 保持 Ubuntu 官方：
 
-```yaml
+```text
 URIs: https://mirrors.aliyun.com/ubuntu/
 Suites: resolute resolute-updates resolute-backports
 
@@ -72,7 +83,7 @@ URIs: http://security.ubuntu.com/ubuntu/
 Suites: resolute-security
 ```
 
-`apt` 有国内阿里的 mirror 后，不要再配置 proxy, 检查命令：
+检查 apt 没有 proxy：
 
 ```bash
 apt-config dump | rg -i 'Acquire::.*Proxy|proxy'
