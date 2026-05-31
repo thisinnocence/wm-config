@@ -4,9 +4,9 @@
 
 ## Shell proxy
 
-部分终端 app 会自动继承 proxy variables；Ghostty 里需要时可以手动开启：
+部分终端 app 会自动继承 proxy variables；也可以在 shell 里显式维护开关函数。
 
-下面配置可以加入 `~/.zshrc`，需要代理时执行 `proxy`，不需要时执行 `unproxy`。
+下面配置可以加入 `~/.zshrc`。需要代理时执行 `proxy`，不需要时执行 `unproxy`。末尾调用一次 `proxy`，表示新开的 shell 默认启用代理；如果不想默认启用，可以删掉最后一行。
 
 ```bash
 proxy() {
@@ -27,6 +27,8 @@ unproxy() {
   unset NO_PROXY no_proxy
   echo "Proxy disabled"
 }
+
+proxy
 ```
 
 说明：
@@ -34,6 +36,28 @@ unproxy() {
 - `curl`、Git HTTPS 等 CLI 会读取这些环境变量
 - SSH 不会读取这些变量，GitHub SSH 需要单独配置
 - apt 当前不配置 proxy，直接使用 mirror
+
+### WSL autoProxy 和 ALL_PROXY
+
+如果 Windows 的 `.wslconfig` 开启了 `autoProxy=true`，WSL 通常会自动继承 Windows 系统代理，并生成：
+
+```bash
+HTTP_PROXY=http://127.0.0.1:7897
+HTTPS_PROXY=http://127.0.0.1:7897
+http_proxy=http://127.0.0.1:7897
+https_proxy=http://127.0.0.1:7897
+```
+
+但 `ALL_PROXY` / `all_proxy` 一般不会自动生成，因为它不是 Windows 系统代理模型里的标准字段，而是 Unix CLI 生态里常用的“所有协议默认代理”变量。
+
+上面的 `proxy()` 函数会手动补齐：
+
+```bash
+export ALL_PROXY="socks5://127.0.0.1:7897"
+export all_proxy="$ALL_PROXY"
+```
+
+这样更多支持 SOCKS5 或 `ALL_PROXY` 的 CLI 工具会默认走 Clash Verge。保留 `NO_PROXY` / `no_proxy` 可以让本地和局域网地址绕过代理。
 
 ## GitHub SSH proxy
 
