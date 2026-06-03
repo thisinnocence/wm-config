@@ -88,6 +88,9 @@ cd ~                                      # 离开项目目录，避免被项目
 corepack prepare pnpm@latest --activate   # 更新当前用户 node.js 环境下 corepack 激活的默认 pnpm
 corepack pnpm -v                          # 查看经过 corepack 解析后的 pnpm 版本
 pnpm -v                                   # 查看当前 shell 直接执行 pnpm 时的版本
+
+# 注意下面的命令更新的是用户级别的pnpm版本
+corepack use pnpm@11.5.1
 ```
 
 确认当前 `pnpm` 命令来自哪里：
