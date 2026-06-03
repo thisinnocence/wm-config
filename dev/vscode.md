@@ -1,5 +1,48 @@
 # vscode
 
+## WSL: `code .` 报 `Exec format error`
+
+现象：
+
+```bash
+code .
+# /mnt/c/Users/.../Microsoft VS Code/bin/code: .../Code.exe: Exec format error
+```
+
+这个错误通常不是 VS Code 配置坏了，而是当前 WSL 实例里的 Windows interop
+运行态丢了。WSL 从 Linux 启动 `cmd.exe`、`Code.exe` 依赖
+`/proc/sys/fs/binfmt_misc/WSLInterop` 这条注册规则；如果这条规则缺失，Linux
+会把 Windows `.exe` 当成本机二进制执行，于是报 `Exec format error`。
+
+先检查：
+
+```bash
+cmd.exe /c ver
+ls -l /proc/sys/fs/binfmt_misc
+cat /proc/sys/fs/binfmt_misc/WSLInterop
+```
+
+如果 `cmd.exe /c ver` 也报 `exec format error`，并且
+`/proc/sys/fs/binfmt_misc/WSLInterop` 不存在，可以手动重新注册：
+
+```bash
+sudo sh -c "printf ':WSLInterop:M::MZ::/init:PF\n' > /proc/sys/fs/binfmt_misc/register"
+```
+
+验证：
+
+```bash
+cmd.exe /c ver
+code --version
+code .
+```
+
+如果重启 WSL 后复发，在 Windows PowerShell 里完整关闭 WSL 后再重新打开：
+
+```powershell
+wsl --shutdown
+```
+
 ```jsonc
 {
     // common
