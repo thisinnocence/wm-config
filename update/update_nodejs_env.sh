@@ -275,7 +275,11 @@ update_fnm() {
 }
 
 update_nodejs() {
+  local corepack_path
   local current_version
+  local node_path
+  local npm_path
+  local npm_prefix
 
   echo "Installing the latest Node.js LTS..."
   fnm install --lts --use
@@ -288,8 +292,39 @@ update_nodejs() {
 
   # 使用完整版本号设置默认版本，确保新 shell 与本次激活的 LTS 完全一致
   fnm default "$current_version"
-  validate_active_runtime updated no
+
+  require_user_command node
+  node_path="$(readlink -f "$(command -v node)")"
+  if [[ "$node_path" != "$FNM_INSTALL_DIR"/node-versions/*/installation/bin/node ]]; then
+    echo "error: updated node is not managed by fnm: $node_path" >&2
+    exit 1
+  fi
+  NODE_INSTALL_DIR="$(dirname "$(dirname "$node_path")")"
+
   require_user_command npm
+  npm_path="$(readlink -f "$(command -v npm)")"
+  if [[ "$npm_path" != "$NODE_INSTALL_DIR"/lib/node_modules/npm/* ]]; then
+    echo "error: updated npm is outside the active fnm Node.js installation: $npm_path" >&2
+    exit 1
+  fi
+  npm_prefix="$(readlink -m "$(npm prefix --global)")"
+  if [[ "$npm_prefix" != "$NODE_INSTALL_DIR" ]]; then
+    echo "error: npm global prefix is outside the active fnm Node.js installation: $npm_prefix" >&2
+    exit 1
+  fi
+
+  # Node.js 25 及后续版本不再内置 Corepack，缺失时通过当前 Node.js 的 npm 补装
+  corepack_path="$(command -v corepack 2>/dev/null || true)"
+  if [[ -n "$corepack_path" ]]; then
+    corepack_path="$(readlink -f "$corepack_path")"
+  fi
+  if [[ "$corepack_path" != "$NODE_INSTALL_DIR"/lib/node_modules/corepack/* ]]; then
+    echo "Installing Corepack for the active Node.js version..."
+    npm install --global corepack@latest
+    hash -r
+  fi
+
+  validate_active_runtime updated no
 }
 
 update_pnpm() {

@@ -41,8 +41,9 @@ cleanup() {
 
   if [[ "$was_running" -eq 1 && "$process_stopped" -eq 1 && "$process_restarted" -eq 0 ]]; then
     echo "Restoring Clash Verge after an interrupted update..." >&2
-    # nohup 配合后台运行，使程序不依赖当前终端；输出全部丢弃
-    nohup /usr/bin/clash-verge >/dev/null 2>&1 &
+    if ! start_clash_verge; then
+      echo "error: failed to restore Clash Verge" >&2
+    fi
   fi
 
   rm -rf "$tmp_dir"
@@ -122,14 +123,19 @@ fetch_release_asset() {
   deb_path="${tmp_dir}/$(basename "$deb_url")"
 }
 
-is_up_to_date() {
+needs_no_update() {
   [[ "$was_installed" -eq 1 ]] \
-    && dpkg --compare-versions "$old_version" eq "$release_version"
+    && dpkg --compare-versions "$old_version" ge "$release_version"
 }
 
-print_up_to_date() {
-  printf 'Clash Verge is already up to date: %s%s%s\n' \
-    "$green" "$release_version" "$reset"
+print_no_update() {
+  if dpkg --compare-versions "$old_version" gt "$release_version"; then
+    printf 'Clash Verge is newer than the latest release: %s%s%s > %s\n' \
+      "$green" "$old_version" "$reset" "$release_version"
+  else
+    printf 'Clash Verge is already up to date: %s%s%s\n' \
+      "$green" "$release_version" "$reset"
+  fi
 }
 
 download_and_verify_deb() {
@@ -158,14 +164,54 @@ download_and_verify_deb() {
 }
 
 stop_clash_verge() {
+  local attempt
+
   if [[ "$was_running" -eq 0 ]]; then
     return
   fi
 
   echo "Stopping running Clash Verge..."
   pkill -u "$user_id" -x clash-verge || true
-  process_stopped=1
-  sleep 2
+
+  for attempt in {1..20}; do
+    if ! pgrep -u "$user_id" -x clash-verge >/dev/null 2>&1; then
+      process_stopped=1
+      return
+    fi
+    sleep 0.25
+  done
+
+  if ! pgrep -u "$user_id" -x clash-verge >/dev/null 2>&1; then
+    process_stopped=1
+    return
+  fi
+
+  echo "error: Clash Verge did not stop within 5 seconds" >&2
+  exit 1
+}
+
+start_clash_verge() {
+  local attempt
+
+  if pgrep -u "$user_id" -x clash-verge >/dev/null 2>&1; then
+    return
+  fi
+
+  # nohup 配合后台运行，使程序不依赖当前终端；输出全部丢弃
+  nohup /usr/bin/clash-verge >/dev/null 2>&1 &
+  for attempt in {1..20}; do
+    if pgrep -u "$user_id" -x clash-verge >/dev/null 2>&1; then
+      return
+    fi
+    sleep 0.25
+  done
+
+  if pgrep -u "$user_id" -x clash-verge >/dev/null 2>&1; then
+    return
+  fi
+
+  echo "error: Clash Verge did not start within 5 seconds" >&2
+  return 1
 }
 
 install_package() {
@@ -175,7 +221,7 @@ install_package() {
   # 仅在更新前程序正在运行时后台重启，并标记已恢复以避免 cleanup 重复启动
   if [[ "$was_running" -eq 1 ]]; then
     echo "Restarting Clash Verge..."
-    nohup /usr/bin/clash-verge >/dev/null 2>&1 &
+    start_clash_verge
     process_restarted=1
   fi
 }
@@ -199,8 +245,8 @@ main() {
   create_workspace
   fetch_release_asset
 
-  if is_up_to_date; then
-    print_up_to_date
+  if needs_no_update; then
+    print_no_update
     return
   fi
 

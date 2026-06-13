@@ -48,18 +48,23 @@ detect_candidate_version() {
   fi
 }
 
-is_up_to_date() {
+needs_no_update() {
   [ "$was_installed" -eq 1 ] \
-    && dpkg --compare-versions "$installed_version" eq "$candidate_version"
+    && dpkg --compare-versions "$installed_version" ge "$candidate_version"
 }
 
 update_chrome() {
   sudo apt-get install -y "$PACKAGE_NAME"
 }
 
-print_up_to_date() {
-  printf 'Google Chrome is already up to date: %s%s%s\n' \
-    "$green" "$candidate_version" "$reset"
+print_no_update() {
+  if dpkg --compare-versions "$installed_version" gt "$candidate_version"; then
+    printf 'Google Chrome is newer than the APT candidate: %s%s%s > %s\n' \
+      "$green" "$installed_version" "$reset" "$candidate_version"
+  else
+    printf 'Google Chrome is already up to date: %s%s%s\n' \
+      "$green" "$candidate_version" "$reset"
+  fi
 }
 
 print_result() {
@@ -82,8 +87,8 @@ main() {
   refresh_package_metadata
   detect_candidate_version
 
-  if is_up_to_date; then
-    print_up_to_date
+  if needs_no_update; then
+    print_no_update
     return
   fi
 

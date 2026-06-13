@@ -76,7 +76,8 @@ update_cargo_tools() {
   fi
   require_user_command cargo-install-update
 
-  cargo +stable install-update --all --cargo-dir "$CARGO_HOME"
+  # 使用已验证并导出的 CARGO_HOME，同时更新 registry 和 Git 来源的工具
+  cargo +stable install-update --all --git
   cargo +stable install --list --root "$CARGO_HOME"
 }
 

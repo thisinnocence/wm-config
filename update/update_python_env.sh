@@ -76,6 +76,11 @@ preflight() {
   # 清除可能强制 uv 进入项目目录或指定 Python 目标的环境变量
   unset UV_CONFIG_FILE UV_PROJECT UV_PYTHON UV_WORKING_DIR
 
+  # 只有 standalone installer 安装的 uv 支持 self update，dry-run 不会修改环境
+  if ! uv_cmd self update --dry-run >/dev/null 2>&1; then
+    unsupported_environment "uv does not support self-update; use the original package manager to upgrade it"
+  fi
+
   UV_PYTHON_INSTALL_DIR_VALUE="$(uv_cmd python dir)"
   UV_PYTHON_BIN_DIR_VALUE="$(uv_cmd python dir --bin)"
   UV_TOOL_DIR_VALUE="$(uv_cmd tool dir)"
