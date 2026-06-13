@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 更新当前用户通过 fnm + pnpm 管理的 Node.js 开发环境
-# - 仅更新用户目录中的 fnm、Node.js LTS、pnpm 和 pnpm 全局 CLI，不使用 sudo
-# - 不修改 Ubuntu APT 安装的系统级 Node.js，也不更新任何项目的 package.json 或依赖
-# - 在临时空目录中运行，避免用户主目录或项目中的 Node.js 配置影响版本解析
-# - fnm 通过 GitHub 官方发布包更新并校验 SHA-256；Node.js 更新到最新 LTS 并设为默认
-# - pnpm 通过 Corepack 更新到最新版，再更新 pnpm 管理的用户级全局软件包
-# - 所有 fnm、Node.js、Corepack 和 pnpm 管理路径都必须位于 HOME 内，否则拒绝更新
-# - 若检测到 nvm、Volta、系统 Node.js、独立 pnpm 等其他方案，将提示仅支持 fnm + pnpm 并退出
-# - 任一步骤失败都会立即终止，最后显示更新后的版本、路径和 fnm 默认版本
+# 方案与适用范围
+# - Node.js 官网可分别选择版本管理器和包管理器，本脚本仅针对 fnm + pnpm 组合
+# - 首次安装 fnm、配置 shell 环境和启用 Corepack 需要手动完成，本脚本只更新已有环境
+# - fnm 可在用户目录中管理多个 Node.js 版本并按项目切换，无需 sudo 且不影响系统 Node.js
+# - pnpm 通过内容寻址存储复用依赖，通常可减少磁盘占用并加快依赖安装
+
+# 更新行为与安全边界
+# - 更新 fnm、Node.js LTS、Corepack/pnpm 和 pnpm 全局 CLI，并校验 fnm 发布包的 SHA-256
+# - 仅操作 HOME 内的用户级环境，不修改系统 Node.js、项目配置或项目依赖
+# - 在临时空目录中运行，检测到其他 Node.js 管理方案或异常路径时拒绝更新
+# - 任一步骤失败都会立即终止，完成后显示版本、路径和 fnm 默认版本
 
 readonly FNM_RELEASE_API="https://api.github.com/repos/Schniz/fnm/releases/latest"
 FNM_INSTALL_DIR=""
@@ -25,6 +27,7 @@ unsupported_environment() {
   exit 1
 }
 
+# 检查脚本自身运行所必需的通用命令
 require_command() {
   local name="$1"
 
@@ -34,6 +37,7 @@ require_command() {
   fi
 }
 
+# 检查受支持的 fnm + Corepack/pnpm 环境必须提供的命令
 require_supported_command() {
   local name="$1"
 
@@ -74,70 +78,61 @@ require_user_command() {
   require_user_path "$name" "$command_path"
 }
 
+# 校验当前 node、corepack 和可选的 pnpm 是否属于 fnm 管理的同一套 Node.js 环境
+# error_mode 控制环境检查与更新后检查的报错方式，validate_pnpm 决定是否校验 pnpm
 validate_active_runtime() {
   local error_mode="$1"
   local validate_pnpm="$2"
+  local require_runtime_command="require_command"
   local corepack_path
   local node_path
   local pnpm_path
-  local corepack_pnpm_version
-  local pnpm_version
 
   if [[ "$error_mode" == "unsupported" ]]; then
-    require_supported_command node
-  else
-    require_command node
+    require_runtime_command="require_supported_command"
   fi
+
+  "$require_runtime_command" node
   node_path="$(readlink -f "$(command -v node)")"
   if [[ "$node_path" != "$FNM_INSTALL_DIR"/node-versions/*/installation/bin/node ]]; then
-    if [[ "$error_mode" == "unsupported" ]]; then
-      unsupported_environment "node is not managed by the detected fnm installation: $node_path"
-    fi
+    [[ "$error_mode" == "unsupported" ]] \
+      && unsupported_environment "node is not managed by the detected fnm installation: $node_path"
     echo "error: updated node is not managed by fnm: $node_path" >&2
     exit 1
   fi
   NODE_INSTALL_DIR="$(dirname "$(dirname "$node_path")")"
 
-  if [[ "$error_mode" == "unsupported" ]]; then
-    require_supported_command corepack
-  else
-    require_command corepack
-  fi
+  "$require_runtime_command" corepack
   corepack_path="$(readlink -f "$(command -v corepack)")"
   if [[ "$corepack_path" != "$NODE_INSTALL_DIR"/lib/node_modules/corepack/* ]]; then
-    if [[ "$error_mode" == "unsupported" ]]; then
-      unsupported_environment "corepack is not provided by the active fnm Node.js installation: $corepack_path"
-    fi
+    [[ "$error_mode" == "unsupported" ]] \
+      && unsupported_environment "corepack is not provided by the active fnm Node.js installation: $corepack_path"
     echo "error: updated corepack is outside the active fnm Node.js installation: $corepack_path" >&2
     exit 1
   fi
 
-  if [[ "$validate_pnpm" == "yes" ]]; then
-    if [[ "$error_mode" == "unsupported" ]]; then
-      require_supported_command pnpm
-    else
-      require_command pnpm
-    fi
-    pnpm_path="$(readlink -f "$(command -v pnpm)")"
-    if [[ "$pnpm_path" != "$NODE_INSTALL_DIR"/lib/node_modules/corepack/* ]]; then
-      if [[ "$error_mode" == "unsupported" ]]; then
-        unsupported_environment "pnpm is outside the active fnm Node.js installation: $pnpm_path"
-      fi
-      echo "error: updated pnpm is outside the active fnm Node.js installation: $pnpm_path" >&2
-      exit 1
-    fi
+  [[ "$validate_pnpm" == "yes" ]] || return 0
 
-    if [[ "$error_mode" != "unsupported" ]]; then
-      pnpm_version="$(pnpm --version)"
-      corepack_pnpm_version="$(corepack pnpm --version)"
-    fi
-    if [[ "$error_mode" != "unsupported" && "$pnpm_version" != "$corepack_pnpm_version" ]]; then
-      echo "error: pnpm does not match the version selected by Corepack" >&2
-      exit 1
-    fi
+  "$require_runtime_command" pnpm
+  pnpm_path="$(readlink -f "$(command -v pnpm)")"
+  if [[ "$pnpm_path" != "$NODE_INSTALL_DIR"/lib/node_modules/corepack/* ]]; then
+    [[ "$error_mode" == "unsupported" ]] \
+      && unsupported_environment "pnpm is outside the active fnm Node.js installation: $pnpm_path"
+    echo "error: updated pnpm is outside the active fnm Node.js installation: $pnpm_path" >&2
+    exit 1
+  fi
+
+  if [[ "$error_mode" != "unsupported" \
+    && "$(pnpm --version)" != "$(corepack pnpm --version)" ]]; then
+    echo "error: pnpm does not match the version selected by Corepack" >&2
+    exit 1
   fi
 }
 
+# 校验 fnm、Corepack 和 pnpm 使用的配置目录、全局安装目录、可执行文件目录及 store 均位于 HOME 内
+# 函数先设置用户级默认路径，再通过 pnpm 命令解析其实际使用的全局目录和内容寻址存储目录
+# error_mode 为 unsupported 时表示更新前检查，发现异常会提示当前环境不受支持且不会进行更新
+# 其他模式用于更新后检查，发现路径越界或目录无法解析时按更新结果异常直接退出
 validate_pnpm_storage() {
   local error_mode="$1"
   local pnpm_bin_dir

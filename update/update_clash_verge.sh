@@ -55,6 +55,7 @@ preflight() {
     exit 1
   fi
 
+  # jq 是用于查询、筛选和转换 JSON 数据的命令行工具，此处用于解析 GitHub release 元数据
   if ! command -v jq >/dev/null 2>&1; then
     echo "jq is required to parse GitHub release metadata." >&2
     exit 1
@@ -71,6 +72,8 @@ detect_current_state() {
   fi
   printf 'Installed version: %s%s%s\n' "$yellow" "${old_version:-not installed}" "$reset"
 
+  # 获取当前用户 ID，并检查该用户是否正在运行进程名完全匹配的 clash-verge
+  # 项目仓库名虽然是 clash-verge-rev，但安装后的主程序和进程名仍是 clash-verge
   user_id="$(id -u)"
   if pgrep -u "$user_id" -x clash-verge >/dev/null 2>&1; then
     was_running=1
@@ -82,6 +85,7 @@ create_workspace() {
   trap cleanup EXIT
 }
 
+# 获取最新 GitHub release，并提取 amd64 DEB 的下载地址、摘要和版本
 fetch_release_asset() {
   local api_url="https://api.github.com/repos/${REPO}/releases/latest"
   local release_json="${tmp_dir}/latest-release.json"
@@ -168,6 +172,7 @@ install_package() {
   stop_clash_verge
   sudo apt-get install -y "$deb_path"
 
+  # 仅在更新前程序正在运行时后台重启，并标记已恢复以避免 cleanup 重复启动
   if [[ "$was_running" -eq 1 ]]; then
     echo "Restarting Clash Verge..."
     nohup /usr/bin/clash-verge >/dev/null 2>&1 &
