@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 更新当前用户通过 fnm + pnpm 管理的 Node.js 开发环境：
-# - 仅更新用户目录中的 fnm、Node.js LTS、pnpm 和 pnpm 全局 CLI，不使用 sudo；
-# - 不修改 Ubuntu APT 安装的系统级 Node.js，也不更新任何项目的 package.json 或依赖；
-# - 在临时空目录中运行，避免用户主目录或项目中的 Node.js 配置影响版本解析；
-# - fnm 通过 GitHub 官方发布包更新并校验 SHA-256；Node.js 更新到最新 LTS 并设为默认；
-# - pnpm 通过 Corepack 更新到最新版，再更新 pnpm 管理的用户级全局软件包；
-# - 所有 fnm、Node.js、Corepack 和 pnpm 管理路径都必须位于 HOME 内，否则拒绝更新；
-# - 若检测到 nvm、Volta、系统 Node.js、独立 pnpm 等其他方案，将提示仅支持 fnm + pnpm 并退出；
-# - 任一步骤失败都会立即终止，最后显示更新后的版本、路径和 fnm 默认版本。
+# 更新当前用户通过 fnm + pnpm 管理的 Node.js 开发环境
+# - 仅更新用户目录中的 fnm、Node.js LTS、pnpm 和 pnpm 全局 CLI，不使用 sudo
+# - 不修改 Ubuntu APT 安装的系统级 Node.js，也不更新任何项目的 package.json 或依赖
+# - 在临时空目录中运行，避免用户主目录或项目中的 Node.js 配置影响版本解析
+# - fnm 通过 GitHub 官方发布包更新并校验 SHA-256；Node.js 更新到最新 LTS 并设为默认
+# - pnpm 通过 Corepack 更新到最新版，再更新 pnpm 管理的用户级全局软件包
+# - 所有 fnm、Node.js、Corepack 和 pnpm 管理路径都必须位于 HOME 内，否则拒绝更新
+# - 若检测到 nvm、Volta、系统 Node.js、独立 pnpm 等其他方案，将提示仅支持 fnm + pnpm 并退出
+# - 任一步骤失败都会立即终止，最后显示更新后的版本、路径和 fnm 默认版本
 
 readonly FNM_RELEASE_API="https://api.github.com/repos/Schniz/fnm/releases/latest"
 FNM_INSTALL_DIR=""
@@ -201,7 +201,7 @@ validate_supported_environment() {
   validate_pnpm_storage unsupported
 }
 
-# 更新前安全检查（preflight）：确认权限、用户目录和 Node.js 环境类型符合要求。
+# 更新前安全检查（preflight）：确认权限、用户目录和 Node.js 环境类型符合要求
 preflight() {
   if (( EUID == 0 )); then
     echo "error: do not run this user-level updater with sudo or as root" >&2
@@ -219,12 +219,12 @@ preflight() {
   require_command sha256sum
   require_command unzip
 
-  # 使用空的临时目录隔离 package.json、.nvmrc、.node-version 等项目配置。
+  # 使用空的临时目录隔离 package.json、.nvmrc、.node-version 等项目配置
   WORK_DIR="$(mktemp -d "$HOME/.node-env-update.XXXXXX")"
   trap 'rm -rf "$WORK_DIR"' EXIT
   cd "$WORK_DIR"
 
-  # 在任何下载或更新之前确认环境完整属于当前用户，并且确实由 fnm + Corepack/pnpm 管理。
+  # 在任何下载或更新之前确认环境完整属于当前用户，并且确实由 fnm + Corepack/pnpm 管理
   validate_supported_environment
 }
 
@@ -244,7 +244,7 @@ update_fnm() {
     *) echo "error: unsupported architecture: $(uname -m)" >&2; exit 1 ;;
   esac
 
-  # 使用 GitHub API 返回的官方 SHA-256 摘要校验发布包，再原子替换 fnm。
+  # 使用 GitHub API 返回的官方 SHA-256 摘要校验发布包，再原子替换 fnm
   echo "Updating fnm..."
   curl -fsSL "$FNM_RELEASE_API" -o "$release_json"
   asset_url="$(
@@ -272,7 +272,7 @@ update_fnm() {
   hash -r
   require_user_command fnm
 
-  # 重新载入 fnm 环境，使后续命令立即使用更新后的 fnm 和 Node.js 路径。
+  # 重新载入 fnm 环境，使后续命令立即使用更新后的 fnm 和 Node.js 路径
   local fnm_environment
   fnm_environment="$(fnm env --fnm-dir "$FNM_INSTALL_DIR" --shell bash)"
   eval "$fnm_environment"
@@ -291,7 +291,7 @@ update_nodejs() {
     exit 1
   fi
 
-  # 使用完整版本号设置默认版本，确保新 shell 与本次激活的 LTS 完全一致。
+  # 使用完整版本号设置默认版本，确保新 shell 与本次激活的 LTS 完全一致
   fnm default "$current_version"
   validate_active_runtime updated no
   require_user_command npm
@@ -303,7 +303,7 @@ update_pnpm() {
 
   echo "Updating the user-level pnpm managed by Corepack..."
 
-  # 在 fnm 管理的当前 Node.js 安装中启用 shim，并设置用户默认 pnpm 版本。
+  # 在 fnm 管理的当前 Node.js 安装中启用 shim，并设置用户默认 pnpm 版本
   corepack enable
   corepack install --global pnpm@latest
   hash -r
@@ -312,7 +312,7 @@ update_pnpm() {
 
   echo "Updating pnpm user-global packages..."
 
-  # --global 仅更新用户级 CLI，不读取或修改任何项目依赖。
+  # --global 仅更新用户级 CLI，不读取或修改任何项目依赖
   pnpm update --global --latest
 }
 
@@ -344,7 +344,7 @@ show_environment() {
 
   printf 'fnm current: %s\n' "$(fnm current 2>/dev/null || echo unknown)"
 
-  # fnm 没有稳定的纯版本输出选项，因此从带 default 标记的列表行提取版本号。
+  # fnm 没有稳定的纯版本输出选项，因此从带 default 标记的列表行提取版本号
   default_version="$(
     fnm list 2>/dev/null \
       | sed -nE 's/^[*[:space:]]*([^[:space:]]+).*[[:space:]]default$/\1/p' \

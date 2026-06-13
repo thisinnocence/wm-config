@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 更新当前用户通过 uv 管理的 Python 开发环境：
-# - 仅更新用户目录中的 uv、uv 管理的 Python runtime 和 uv tool，不使用 sudo；
-# - 不修改 Ubuntu APT 安装的 System Python，也不使用 pip 更新系统或用户 site-packages；
-# - 不读取或修改项目 pyproject.toml、uv.lock、requirements.txt、.python-version 或 .venv；
-# - 在 HOME 下的临时空目录中运行，并使用 --no-config 禁止发现项目和用户配置文件；
-# - uv、Python 安装目录、工具目录、命令入口和缓存目录都必须位于 HOME 内；
-# - 若 uv 不属于当前用户，或检测到已激活的 venv/Conda 环境，将不做修改并直接退出；
-# - 更新完成后显示 uv、当前 shell Python、uv 管理的 Python runtime 和 uv tool 信息。
+# 更新当前用户通过 uv 管理的 Python 开发环境
+# - 仅更新用户目录中的 uv、uv 管理的 Python runtime 和 uv tool，不使用 sudo
+# - 不修改 Ubuntu APT 安装的 System Python，也不使用 pip 更新系统或用户 site-packages
+# - 不读取或修改项目 pyproject.toml、uv.lock、requirements.txt、.python-version 或 .venv
+# - 在 HOME 下的临时空目录中运行，并使用 --no-config 禁止发现项目和用户配置文件
+# - uv、Python 安装目录、工具目录、命令入口和缓存目录都必须位于 HOME 内
+# - 若 uv 不属于当前用户，或检测到已激活的 venv/Conda 环境，将不做修改并直接退出
+# - 更新完成后显示 uv、当前 shell Python、uv 管理的 Python runtime 和 uv tool 信息
 
 HOME_REAL=""
 WORK_DIR=""
@@ -42,7 +42,7 @@ uv_cmd() {
   "$UV_BIN" --no-config "$@"
 }
 
-# 更新前安全检查（preflight）：确认权限、uv 所有权及所有写入目录均属于当前用户。
+# 更新前安全检查（preflight）：确认权限、uv 所有权及所有写入目录均属于当前用户
 preflight() {
   if (( EUID == 0 )); then
     echo "error: do not run this user-level updater with sudo or as root" >&2
@@ -68,12 +68,12 @@ preflight() {
   UV_BIN="$(readlink -f "$(command -v uv)")"
   require_user_path "uv" "$UV_BIN"
 
-  # 使用空目录和 --no-config，确保 uv 不会发现项目或用户级 uv.toml 配置。
+  # 使用空目录和 --no-config，确保 uv 不会发现项目或用户级 uv.toml 配置
   WORK_DIR="$(mktemp -d "$HOME/.python-env-update.XXXXXX")"
   trap 'rm -rf "$WORK_DIR"' EXIT
   cd "$WORK_DIR"
 
-  # 清除可能强制 uv 进入项目目录或指定 Python 目标的环境变量。
+  # 清除可能强制 uv 进入项目目录或指定 Python 目标的环境变量
   unset UV_CONFIG_FILE UV_PROJECT UV_PYTHON UV_WORKING_DIR
 
   UV_PYTHON_INSTALL_DIR_VALUE="$(uv_cmd python dir)"
@@ -88,7 +88,7 @@ preflight() {
   require_user_path "uv tool executable directory" "$UV_TOOL_BIN_DIR_VALUE"
   require_user_path "uv cache directory" "$UV_CACHE_DIR_VALUE"
 
-  # 固定已经验证过的用户级目录，避免环境变量在更新期间把写入位置改到 HOME 外。
+  # 固定已经验证过的用户级目录，避免环境变量在更新期间把写入位置改到 HOME 外
   export UV_PYTHON_INSTALL_DIR="$UV_PYTHON_INSTALL_DIR_VALUE"
   export UV_PYTHON_BIN_DIR="$UV_PYTHON_BIN_DIR_VALUE"
   export UV_TOOL_DIR="$UV_TOOL_DIR_VALUE"

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 更新 Rust 开发环境：
-# - 将 rustup 默认工具链设为 stable，并更新 rustc、cargo 和标准库；
-# - 安装 rustfmt、clippy、rust-src 组件，并显示当前工具链和版本信息；
-# - 安装 cargo-update（如尚未安装），再更新所有通过 cargo install 安装的工具。
-# - 仅支持当前用户目录中的 rustup/Cargo 环境，禁止使用 sudo/root 运行；
-# - 在临时空目录中执行，并显式指定 stable，避免项目 rust-toolchain 配置干扰。
+# 更新 Rust 开发环境
+# - 将 rustup 默认工具链设为 stable，并更新 rustc、cargo 和标准库
+# - 安装 rustfmt、clippy、rust-src 组件，并显示当前工具链和版本信息
+# - 安装 cargo-update（如尚未安装），再更新所有通过 cargo install 安装的工具
+# - 仅支持当前用户目录中的 rustup/Cargo 环境，禁止使用 sudo/root 运行
+# - 在临时空目录中执行，并显式指定 stable，避免项目 rust-toolchain 配置干扰
 
 HOME_REAL=""
 WORK_DIR=""
@@ -59,7 +59,7 @@ preflight() {
 }
 
 update_rust() {
-  # 更新并固定默认 stable 工具链；显式指定工具链，避免目录级 override 生效。
+  # 更新并固定默认 stable 工具链；显式指定工具链，避免目录级 override 生效
   rustup update stable
   rustup default stable
   rustup component add --toolchain stable rustfmt clippy rust-src
@@ -70,7 +70,7 @@ update_rust() {
 }
 
 update_cargo_tools() {
-  # cargo-update 本身也安装到当前用户的 CARGO_HOME。
+  # cargo-update 本身也安装到当前用户的 CARGO_HOME
   if ! command -v cargo-install-update >/dev/null 2>&1; then
     cargo +stable install cargo-update
   fi
