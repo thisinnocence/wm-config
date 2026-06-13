@@ -372,7 +372,7 @@ show_environment() {
   show_tool corepack
   show_tool pnpm
 
-  printf 'fnm current: %s\n' "$(fnm current 2>/dev/null || echo unknown)"
+  printf 'fnm node current: %s\n' "$(fnm current 2>/dev/null || echo unknown)"
 
   # fnm 没有稳定的纯版本输出选项，因此从带 default 标记的列表行提取版本号
   default_version="$(
@@ -381,7 +381,7 @@ show_environment() {
       | head -n1 \
       || true
   )"
-  printf 'fnm default: %s\n' "${default_version:-unknown}"
+  printf 'fnm node default: %s\n' "${default_version:-unknown}"
   echo
   pnpm list --global --depth 0
 }
