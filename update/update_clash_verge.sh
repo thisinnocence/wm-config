@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# 安装或更新 Clash Verge：
+# - 通过 GitHub API 获取最新正式版，并用 jq 选择 amd64 架构的 DEB 包；
+# - 使用 APT 安装下载的软件包，因此需要网络连接、jq 和 sudo 权限；
+# - 若 Clash Verge 原本正在运行，安装前将其停止，并在安装后重新启动。
+
 REPO="clash-verge-rev/clash-verge-rev"
 PACKAGE_NAME="clash-verge"
 
@@ -22,14 +27,21 @@ trap 'rm -rf "$tmp_dir"' EXIT
 api_url="https://api.github.com/repos/${REPO}/releases/latest"
 release_json="${tmp_dir}/latest-release.json"
 
+if ! command -v jq >/dev/null 2>&1; then
+  echo "jq is required to parse GitHub release metadata." >&2
+  exit 1
+fi
+
 echo "Fetching latest release metadata: $api_url"
 curl -fsSL "$api_url" -o "$release_json"
 
 deb_url="$(
-  grep '"browser_download_url":' "$release_json" \
-    | sed -E 's/.*"([^"]+)".*/\1/' \
-    | grep '/Clash\.Verge_.*_amd64\.deb$' \
-    | head -n1
+  jq -r '
+    first(
+      .assets[]?.browser_download_url
+      | select(test("/Clash\\.Verge_.*_amd64\\.deb$"))
+    ) // empty
+  ' "$release_json"
 )"
 
 if [[ -z "$deb_url" ]]; then

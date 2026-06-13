@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -e
 
+# 更新 Rust 开发环境：
+# - 将 rustup 默认工具链设为 stable，并更新 rustc、cargo 和标准库；
+# - 安装 rustfmt、clippy、rust-src 组件，并显示当前工具链和版本信息；
+# - 安装 cargo-update（如尚未安装），再更新所有通过 cargo install 安装的工具。
+
 # 只使用 stable 工具链
 rustup default stable
 
