@@ -24,11 +24,25 @@ node.js 官方和社区提供了多种安装方式。本环境选择 `fnm + pnpm
 # 安装 fnm；也可以改用系统包管理器或发行版推荐方式安装
 curl -fsSL https://fnm.vercel.app/install | bash
 
-# 将下面一行加入 ~/.zshrc，让新 shell 自动加载 fnm 管理的 node.js
-eval "$(fnm env --use-on-cd --shell zsh)"
+# 将下面配置加入 ~/.zshrc，让新 shell 自动加载 fnm 管理的 node.js
+FNM_DIR="$HOME/.local/share/fnm"
+if [ -d "$FNM_DIR" ]; then
+    # 删除父 shell 继承的 fnm 路径，避免当前 shell 初始化后 PATH 堆叠
+    path=(${path:#$FNM_DIR})
+    path=(${path:#*/fnm_multishells/*/bin})
+
+    # 保留一个 fnm executable 路径，再为当前 shell 创建独立的 node.js 路径
+    path=("$FNM_DIR" $path)
+    export PATH
+    eval "$(fnm env --use-on-cd --shell zsh)"
+fi
 ```
 
 修改 `~/.zshrc` 后重新打开 shell，或执行 `source ~/.zshrc`。
+
+子 shell 会继承父 shell 的 `PATH`，但 `fnm env` 又会为当前 shell 创建新的 `fnm_multishells/.../bin` 路径。
+这种情况在 tmux session 中尤其常见。建议采用上面的配置，在初始化前删除继承的旧 fnm 路径，避免 `PATH` 重复，
+同时保留当前 shell 独立切换 node.js 版本的能力。
 
 ```bash
 # fnm
@@ -172,5 +186,6 @@ codex --version
 ## 参考
 
 - fnm 安装说明: <https://www.fnmnode.com/guide/install.html>
+- fnm shell setup: <https://github.com/Schniz/fnm#shell-setup>
 - Node.js release 状态: <https://nodejs.org/en/about/previous-releases>
 - pnpm setup: <https://pnpm.io/cli/setup>
