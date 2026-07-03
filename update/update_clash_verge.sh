@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # 安装或更新 Clash Verge
-# - 通过 GitHub API 获取最新正式版，并用 jq 选择 amd64 架构的 DEB 包
+# - 通过 GitHub API 获取最新正式版，并用 jq 选择当前系统架构的 DEB 包
 # - 本地版本与最新 release 相同时跳过下载和安装
 # - 校验 GitHub 提供的 SHA-256、DEB 包名和架构，再通过 APT 安装
 # - 脚本必须由普通用户运行，仅 APT 安装步骤使用 sudo
@@ -11,7 +11,7 @@ set -euo pipefail
 
 REPO="clash-verge-rev/clash-verge-rev"
 PACKAGE_NAME="clash-verge"
-EXPECTED_ARCH="amd64"
+PACKAGE_ARCH=""
 
 green="$(printf '\033[32m')"
 yellow="$(printf '\033[33m')"
@@ -63,6 +63,18 @@ preflight() {
   fi
 }
 
+detect_package_architecture() {
+  PACKAGE_ARCH="$(dpkg --print-architecture)"
+
+  case "$PACKAGE_ARCH" in
+    amd64 | arm64) ;;
+    *)
+      echo "error: unsupported package architecture for Clash Verge: $PACKAGE_ARCH" >&2
+      exit 1
+      ;;
+  esac
+}
+
 detect_current_state() {
   old_version="$(dpkg-query -W -f='${Version}\n' "$PACKAGE_NAME" 2>/dev/null || true)"
 
@@ -86,7 +98,7 @@ create_workspace() {
   trap cleanup EXIT
 }
 
-# 获取最新 GitHub release，并提取 amd64 DEB 的下载地址、摘要和版本
+# 获取最新 GitHub release，并提取当前系统架构 DEB 的下载地址、摘要和版本
 fetch_release_asset() {
   local api_url="https://api.github.com/repos/${REPO}/releases/latest"
   local release_json="${tmp_dir}/latest-release.json"
@@ -99,11 +111,11 @@ fetch_release_asset() {
     # jq 是用于解析、筛选和转换 JSON 数据的命令行工具
     # first 只取首个匹配资源；[]? 在 assets 缺失或为空时不会让 jq 报错
     # @tsv 将下载地址、摘要和 release 标签以制表符分隔，供下面的 read 拆分
-    jq -er '
+    jq -er --arg arch "$PACKAGE_ARCH" '
       . as $release
       | first(
         $release.assets[]?
-        | select(.browser_download_url | test("/Clash\\.Verge_.*_amd64\\.deb$"))
+        | select(.name | test("^Clash\\.Verge_.*_" + $arch + "\\.deb$"))
       )
       | [.browser_download_url, .digest, $release.tag_name]
       | @tsv
@@ -114,7 +126,7 @@ fetch_release_asset() {
 
   # =~ 使用 Bash 正则，确认摘要严格为“sha256:”加 64 位十六进制字符
   if [[ -z "$deb_url" || -z "$release_tag" || ! "$deb_digest" =~ ^sha256:[0-9a-fA-F]{64}$ ]]; then
-    echo "Could not find an official amd64 DEB asset with a SHA-256 digest." >&2
+    echo "Could not find an official $PACKAGE_ARCH DEB asset with a SHA-256 digest." >&2
     exit 1
   fi
 
@@ -156,7 +168,7 @@ download_and_verify_deb() {
     echo "Unexpected DEB package name: $deb_package" >&2
     exit 1
   fi
-  if [[ "$deb_arch" != "$EXPECTED_ARCH" ]]; then
+  if [[ "$deb_arch" != "$PACKAGE_ARCH" ]]; then
     echo "Unexpected DEB architecture: $deb_arch" >&2
     exit 1
   fi
@@ -241,6 +253,7 @@ print_result() {
 
 main() {
   preflight
+  detect_package_architecture
   detect_current_state
   create_workspace
   fetch_release_asset
