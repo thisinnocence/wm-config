@@ -51,6 +51,13 @@ fc-match "JetBrains Mono"
 gsettings get org.gnome.desktop.interface text-scaling-factor
 ```
 
+> 关于缩放：
+>
+> - `Display Scale: 125%` 会整体放大窗口、按钮、图标和标题栏等 UI 元素；
+> - `Scaling Factor: 1.20` 主要放大字体， 以及部分尺寸随字体变化的控件；
+>
+> 两者叠加后，字体的等效缩放约为 `1.25 x 1.20 = 1.50`，接近 Windows 11 的 150%
+
 ## 中文输入法
 
 安装 Fcitx5 + Pinyin：
