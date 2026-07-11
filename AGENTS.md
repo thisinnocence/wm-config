@@ -8,6 +8,7 @@ Personal Linux development-environment configuration and maintenance scripts.
 - `ubuntu/` documents bare-metal Ubuntu Desktop setup.
 - `update/` contains user-invoked maintenance scripts.
 - Keep documentation aligned with the scripts and verified machine behavior.
+- When a change makes `README.md` inaccurate or incomplete, update it in the same change.
 
 ## Node.js Environment
 
