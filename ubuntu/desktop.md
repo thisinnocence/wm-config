@@ -23,6 +23,8 @@ Resolution: 3840x2160 @ 160Hz
 Scale: 125%
 ```
 
+注：`Display Scale` 会整体放大窗口、按钮、图标和标题栏等 UI 元素。
+
 安装字体：
 
 ```bash
@@ -38,10 +40,12 @@ fc-cache -fv
 UI font: Ubuntu Sans 11
 Document font: Sans 11
 Monospace font: JetBrains Mono 11
-Scaling Factor: 1.20
+Scaling Factor: 1.15
 Hinting: Slight
 Antialiasing: rgba
 ```
+
+注： `Scaling Factor` 主要放大字体， 以及部分尺寸随字体变化的控件。
 
 检查：
 
@@ -50,13 +54,6 @@ fc-match "Noto Sans CJK SC"
 fc-match "JetBrains Mono"
 gsettings get org.gnome.desktop.interface text-scaling-factor
 ```
-
-> 关于缩放：
->
-> - `Display Scale: 125%` 会整体放大窗口、按钮、图标和标题栏等 UI 元素；
-> - `Scaling Factor: 1.20` 主要放大字体， 以及部分尺寸随字体变化的控件；
->
-> 两者叠加后，字体的等效缩放约为 `1.25 x 1.20 = 1.50`，接近 Windows 11 的 150%
 
 ## 中文输入法
 
