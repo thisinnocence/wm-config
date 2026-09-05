@@ -69,12 +69,23 @@ corepack use pnpm@latest-11
 corepack up
 ```
 
-国内网络需要 npm 镜像源时，可以配置 registry：
+默认使用官方 npm 源，避免镜像同步滞后导致无法安装刚发布的版本：
 
 ```bash
-# registry 配置使用 ~/.npmrc；pnpm 11 的其他用户级设置使用 ~/.config/pnpm/config.yaml
-pnpm config set registry https://registry.npmmirror.com
+pnpm config set --global registry https://registry.npmjs.org/
+pnpm config get registry  # 应输出 https://registry.npmjs.org/
 ```
+
+如果输出仍是旧镜像地址，检查 `~/.npmrc`，将其中已有的 `registry` 行改为：
+
+```ini
+registry=https://registry.npmjs.org/
+```
+
+本机 pnpm 11 的上述命令会写入 `~/.config/pnpm/auth.ini`，但 `~/.npmrc` 中的旧设置可以覆盖它。
+修改后再次执行 `pnpm config get registry` 确认生效；以后安装和更新无需附加 `--registry` 参数。
+项目自己的 registry 配置仍可覆盖用户级默认值。国内网络需要镜像时可改用
+`https://registry.npmmirror.com/`，但取消发布等待期无法消除镜像同步延迟。
 
 ## 手动更新版本
 
