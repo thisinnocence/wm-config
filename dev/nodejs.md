@@ -72,7 +72,7 @@ corepack up
 国内网络需要 npm 镜像源时，可以配置 registry：
 
 ```bash
-# pnpm 的配置文件是 ~/.npmrc
+# registry 配置使用 ~/.npmrc；pnpm 11 的其他用户级设置使用 ~/.config/pnpm/config.yaml
 pnpm config set registry https://registry.npmmirror.com
 ```
 
@@ -161,6 +161,24 @@ Linux 开发环境中的 node.js 工具应优先安装在用户目录下，注�
 - 项目级安装如运行时依赖、构建依赖和框架依赖应放在项目自己的 `package.json` 中，避免把全局环境变成隐式依赖
 - 环境的用户级 CLI 统一由 `pnpm` 维护，不要在 `npm -g`、`pnpm -g` 和手工二进制安装之间来回切换
 
+### 允许安装刚发布的版本
+
+pnpm 11 默认要求包发布满 1440 分钟（1 天）后才允许安装。若希望新版本发布后立即更新，
+将用户级 `minimumReleaseAge` 设置为 `0`：
+
+```bash
+cd ~
+pnpm config set --global minimumReleaseAge 0
+pnpm config get minimumReleaseAge  # 应输出 0
+pnpm config get globalconfig      # 查看用户级配置文件路径
+```
+
+本机配置文件为 `~/.config/pnpm/config.yaml`，上述命令会写入 `minimumReleaseAge: 0`。
+这里的 `--global` 表示当前用户的配置，不需要 `sudo`；项目的 `pnpm-workspace.yaml` 可以覆盖该默认值。
+此设置只取消安装和更新时的发布等待期，不会自动更新包。
+
+### 查看和更新全局包
+
 先查看过期包，再更新：
 
 ```bash
@@ -191,3 +209,4 @@ codex --version
 - fnm shell setup: <https://github.com/Schniz/fnm#shell-setup>
 - Node.js release 状态: <https://nodejs.org/en/about/previous-releases>
 - pnpm setup: <https://pnpm.io/cli/setup>
+- pnpm 11 发布等待期说明: <https://github.com/pnpm/pnpm.io/blob/main/blog/releases/11.0.md>
