@@ -40,5 +40,12 @@ The scripts fail fast when their expected environment is not available. Read eac
 System package scripts use `sudo`; user-level language environment scripts reject root execution and keep changes under
 the current user's home directory.
 
+`update_nodejs_env.sh` also resolves the latest `@deepseek-ai/dsh`, prepares its isolated `pnpm dlx` cache, and
+creates a `dsh` launcher in `pnpm bin -g`. The launcher uses the version selected by the last update; no shell
+configuration or manually maintained version is needed. dsh is excluded from the global package list, though
+upstream dependency warnings can still appear when its cache is installed or refreshed. When migrating an existing
+global installation, first run `pnpm remove -g @deepseek-ai/dsh`; pnpm removes its whole installation group,
+including any packages installed together with dsh.
+
 `update_all.sh` runs `apt-get full-upgrade -y` and `apt-get autoremove -y`. Review the pending APT changes before using
 it on a machine where automatic package removal is not acceptable.

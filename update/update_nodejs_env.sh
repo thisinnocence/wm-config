@@ -9,6 +9,7 @@ set -euo pipefail
 
 # 更新行为与安全边界
 # - 更新 fnm、Node.js LTS、Corepack/pnpm 和 pnpm 全局 CLI，并校验 fnm 发布包的 SHA-256
+# - dsh 单独通过 pnpm dlx 更新缓存并生成启动命令，不加入全局依赖，不修改 shell 配置
 # - 仅操作 HOME 内的用户级环境，不修改系统 Node.js、项目配置或项目依赖
 # - 在临时空目录中运行，检测到其他 Node.js 管理方案或异常路径时拒绝更新
 # - 任一步骤失败都会立即终止，完成后显示版本、路径和 fnm 默认版本
@@ -346,6 +347,53 @@ update_pnpm() {
   pnpm update --global --latest
 }
 
+# 从 registry 解析最新版本，提前准备 dlx 缓存；启动命令使用本次解析的版本，直到下次统一更新
+update_dsh() {
+  local bin_dir
+  local launcher
+  local version
+  local candidate="$WORK_DIR/dsh"
+  local marker="# Managed by wm-config: dsh dlx launcher"
+  # 与现有 dsh 安装使用的构建依赖一致；缓存刷新时启动命令也需要相同授权
+  local -a dlx_args=(
+    dlx
+    --allow-build=@deepseek-ai/dsh-subprocess-local
+    --allow-build=@google/genai
+    --allow-build=koffi
+    --allow-build=node-pty
+    --allow-build=protobufjs
+  )
+
+  bin_dir="$(pnpm bin --global)"
+  require_user_path "dsh launcher directory" "$bin_dir"
+  launcher="$bin_dir/dsh"
+  if [[ -e "$launcher" || -L "$launcher" ]]; then
+    if [[ -L "$launcher" ]] || ! grep -Fxq "$marker" "$launcher"; then
+      echo "error: remove the old dsh installation with 'pnpm remove -g @deepseek-ai/dsh' first" >&2
+      exit 1
+    fi
+  fi
+
+  echo "Updating dsh in the isolated pnpm dlx cache..."
+  version="$(pnpm view @deepseek-ai/dsh@latest version --json | jq -er 'select(type == "string")')"
+  if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][a-zA-Z0-9.+-]+)?$ ]]; then
+    echo "error: invalid dsh version returned by the registry: $version" >&2
+    exit 1
+  fi
+
+  # 实际运行 --help，确认依赖安装和 CLI 启动成功后再替换入口；安装日志及 warning 保持可见
+  pnpm "${dlx_args[@]}" "@deepseek-ai/dsh@$version" --help >"$WORK_DIR/dsh-help.txt"
+  {
+    printf '%s\n' '#!/usr/bin/env bash' "$marker"
+    printf 'exec '
+    printf '%q ' pnpm "${dlx_args[@]}" "@deepseek-ai/dsh@$version"
+    printf '"$@"\n'
+  } >"$candidate"
+  mkdir -p "$bin_dir"
+  install -m 0755 "$candidate" "$launcher"
+  printf 'dsh dlx version: %s (%s)\n' "$version" "$launcher"
+}
+
 show_tool() {
   local name="$1"
 
@@ -391,6 +439,7 @@ main() {
   update_fnm
   update_nodejs
   update_pnpm
+  update_dsh
   show_environment
 }
 
