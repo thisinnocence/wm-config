@@ -40,7 +40,11 @@ The scripts fail fast when their expected environment is not available. Read eac
 System package scripts use `sudo`; user-level language environment scripts reject root execution and keep changes under
 the current user's home directory.
 
-`update_nodejs_env.sh` updates existing pnpm global packages, including Codex, then runs `codex --version`.
+`update_nodejs_env.sh` checks fnm's latest GitHub release, the latest Node.js LTS, and registry `latest`
+versions for Corepack, pnpm, existing global CLI packages, and dsh. Matching versions skip installation;
+only differing versions are updated. Node.js stays on the LTS channel. Missing pnpm shims are still repaired,
+and the fnm default is aligned with the selected LTS when needed. Release checks require network access.
+The script then runs `codex --version`.
 It stops if the Codex command is missing, resolves outside the user's home directory, or fails to start.
 It also checks the separately managed Codex daemon. If its installed or running version differs, the script
 copies and pins the current CLI package with `codex app-server daemon update --from-cli --yes`, then verifies

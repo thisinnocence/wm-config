@@ -232,6 +232,8 @@ update_fnm() {
   local digest
   local release_json="${WORK_DIR}/fnm-release.json"
   local replacement="${FNM_INSTALL_DIR}/.fnm.new.$$"
+  local current_version
+  local latest_version
 
   case "$(uname -m)" in
     x86_64 | amd64) asset_name="fnm-linux.zip" ;;
@@ -241,8 +243,16 @@ update_fnm() {
   esac
 
   # 使用 GitHub API 返回的官方 SHA-256 摘要校验发布包，再原子替换 fnm
-  echo "Updating fnm..."
   curl -fsSL "$FNM_RELEASE_API" -o "$release_json"
+  latest_version="$(jq -er '.tag_name | select(type == "string" and length > 0)' "$release_json")"
+  latest_version="${latest_version#v}"
+  current_version="$(fnm --version)"
+  current_version="${current_version#fnm }"
+  if [[ "$current_version" == "$latest_version" ]]; then
+    echo "fnm: $current_version matches latest release; skipping update."
+    return 0
+  fi
+  echo "Updating fnm: $current_version -> $latest_version..."
   asset_url="$(
     jq -er --arg name "$asset_name" \
       '.assets[] | select(.name == $name) | .browser_download_url' "$release_json"
@@ -281,9 +291,22 @@ update_nodejs() {
   local node_path
   local npm_path
   local npm_prefix
+  local latest_version
+  local corepack_version="missing"
+  local latest_corepack
 
-  echo "Installing the latest Node.js LTS..."
-  fnm install --lts --use
+  latest_version="$(fnm list-remote --lts --latest)"
+  latest_version="${latest_version%% *}"
+  if [[ ! "$latest_version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "error: invalid latest Node.js LTS version: $latest_version" >&2
+    exit 1
+  fi
+  if [[ "$(node --version)" == "$latest_version" ]]; then
+    echo "Node.js LTS: $latest_version matches latest release; skipping installation."
+  else
+    echo "Installing Node.js LTS: $latest_version..."
+    fnm install "$latest_version" --use
+  fi
   current_version="$(fnm current)"
 
   if [[ -z "$current_version" || "$current_version" == "none" ]]; then
@@ -292,7 +315,9 @@ update_nodejs() {
   fi
 
   # 使用完整版本号设置默认版本，确保新 shell 与本次激活的 LTS 完全一致
-  fnm default "$current_version"
+  if [[ "$(fnm default)" != "$current_version" ]]; then
+    fnm default "$current_version"
+  fi
 
   require_user_command node
   node_path="$(readlink -f "$(command -v node)")"
@@ -319,32 +344,74 @@ update_nodejs() {
   if [[ -n "$corepack_path" ]]; then
     corepack_path="$(readlink -f "$corepack_path")"
   fi
-  if [[ "$corepack_path" != "$NODE_INSTALL_DIR"/lib/node_modules/corepack/* ]]; then
-    echo "Installing Corepack for the active Node.js version..."
-    npm install --global corepack@latest
+  latest_corepack="$(registry_version corepack)"
+  if [[ "$corepack_path" == "$NODE_INSTALL_DIR"/lib/node_modules/corepack/* ]]; then
+    corepack_version="$(corepack --version)"
+  fi
+  if [[ "$corepack_version" == "$latest_corepack" ]]; then
+    echo "Corepack: $corepack_version matches latest release; skipping update."
+  else
+    echo "Updating Corepack: $corepack_version -> $latest_corepack..."
+    npm install --global "corepack@$latest_corepack"
     hash -r
   fi
 
   validate_active_runtime updated no
 }
 
+# 使用 registry 的 latest dist-tag，解析失败时直接终止，避免误判为无需更新
+registry_version() {
+  npm view "$1@latest" version --json | jq -er 'select(type == "string" and length > 0)'
+}
+
+update_global_packages() {
+  local packages_json
+  local packages
+  local name
+  local current_version
+  local latest_version
+
+  packages_json="$(pnpm list --global --depth 0 --json)"
+  packages="$(jq -r '[.[] | (.dependencies // {}) | to_entries[]] | .[] | [.key, .value.version] | @tsv' \
+    <<<"$packages_json")"
+  while IFS=$'\t' read -r name current_version; do
+    [[ -n "$name" ]] || continue
+    latest_version="$(registry_version "$name")"
+    if [[ "$current_version" == "$latest_version" ]]; then
+      echo "$name: $current_version matches latest release; skipping update."
+    else
+      echo "Updating $name: $current_version -> $latest_version..."
+      pnpm install --global "$name@$latest_version"
+    fi
+  done <<<"$packages"
+}
+
 update_pnpm() {
   require_user_path "COREPACK_HOME" "$COREPACK_HOME"
   require_user_path "PNPM_HOME" "$PNPM_HOME"
 
-  echo "Updating the user-level pnpm managed by Corepack..."
+  local current_version
+  local latest_version
+  local pnpm_path
 
-  # 在 fnm 管理的当前 Node.js 安装中启用 shim，并设置用户默认 pnpm 版本
-  corepack enable
-  corepack install --global pnpm@latest
-  hash -r
+  latest_version="$(registry_version pnpm)"
+  pnpm_path="$(command -v pnpm 2>/dev/null || true)"
+  if [[ -z "$pnpm_path" || "$(readlink -f "$pnpm_path")" != \
+    "$NODE_INSTALL_DIR"/lib/node_modules/corepack/* ]]; then
+    corepack enable pnpm
+    hash -r
+  fi
+  current_version="$(pnpm --version)"
+  if [[ "$current_version" == "$latest_version" ]]; then
+    echo "pnpm: $current_version matches latest release; skipping update."
+  else
+    echo "Updating pnpm: $current_version -> $latest_version..."
+    corepack install --global "pnpm@$latest_version"
+    hash -r
+  fi
   validate_active_runtime updated yes
   validate_pnpm_storage updated
-
-  echo "Updating pnpm user-global packages..."
-
-  # --global 仅更新用户级 CLI，不读取或修改任何项目依赖
-  pnpm update --global --latest
+  update_global_packages
 
   # 严格检查 Codex 是否能启动；失败时立即退出，不将包安装成功视为 CLI 可用
   echo "Verifying Codex CLI..."
@@ -412,6 +479,7 @@ update_dsh() {
   local version
   local candidate="$WORK_DIR/dsh"
   local marker="# Managed by wm-config: dsh dlx launcher"
+  local installed_version
   # 与现有 dsh 安装使用的构建依赖一致；缓存刷新时启动命令也需要相同授权
   local -a dlx_args=(
     dlx
@@ -437,6 +505,14 @@ update_dsh() {
   if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][a-zA-Z0-9.+-]+)?$ ]]; then
     echo "error: invalid dsh version returned by the registry: $version" >&2
     exit 1
+  fi
+
+  if [[ -f "$launcher" ]]; then
+    installed_version="$(sed -nE 's/.* @deepseek-ai\/dsh@([^ ]+) "\$@"$/\1/p' "$launcher")"
+    if [[ "$installed_version" == "$version" ]]; then
+      echo "dsh: $version matches latest release; skipping cache and launcher update."
+      return 0
+    fi
   fi
 
   # 实际运行 --help，确认依赖安装和 CLI 启动成功后再替换入口；安装日志及 warning 保持可见
