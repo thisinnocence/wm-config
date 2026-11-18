@@ -345,6 +345,64 @@ update_pnpm() {
 
   # --global 仅更新用户级 CLI，不读取或修改任何项目依赖
   pnpm update --global --latest
+
+  # 严格检查 Codex 是否能启动；失败时立即退出，不将包安装成功视为 CLI 可用
+  echo "Verifying Codex CLI..."
+  hash -r
+  require_user_command codex
+  codex --version
+  sync_codex_daemon
+}
+
+# daemon 使用独立安装包；仅在版本不一致时从当前 CLI 同步，避免每次更新都中断会话
+sync_codex_daemon() {
+  local versions
+  local attempt
+  local was_running
+
+  versions="$(codex app-server daemon version)"
+  jq -e '
+    (.cliVersion | type == "string" and length > 0) and (.status | type == "string")
+  ' <<<"$versions" >/dev/null || {
+    echo "error: invalid Codex daemon version response: $versions" >&2
+    return 1
+  }
+  was_running="$(jq -r '.status == "running"' <<<"$versions")"
+  if jq -e '
+    (.cliVersion | type == "string" and length > 0) and
+    .managedCodexVersion == .cliVersion and
+    (.status != "running" or .appServerVersion == .cliVersion)
+  ' <<<"$versions" >/dev/null; then
+    echo "Codex daemon package and running server match the CLI."
+    return 0
+  fi
+
+  # 未安装 daemon 时无需创建后台服务
+  if jq -e '.status != "running" and .managedCodexVersion == null' <<<"$versions" >/dev/null; then
+    echo "Codex daemon is not installed; skipping daemon update."
+    return 0
+  fi
+
+  echo "Syncing Codex daemon from the CLI (may interrupt active Codex sessions)..."
+  codex app-server daemon update --from-cli --yes
+
+  # 等待后台服务重启完成；禁止在 daemon 仍运行旧版本时报告更新成功
+  for ((attempt = 0; attempt < 30; attempt++)); do
+    versions="$(codex app-server daemon version)"
+    if jq -e --argjson was_running "$was_running" '
+      (.cliVersion | type == "string" and length > 0) and
+      .managedCodexVersion == .cliVersion and
+      ($was_running == false or .status == "running") and
+      (.status != "running" or .appServerVersion == .cliVersion)
+    ' <<<"$versions" >/dev/null; then
+      printf 'Codex daemon versions: %s\n' "$versions"
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo "error: Codex daemon still does not match the CLI: $versions" >&2
+  return 1
 }
 
 # 从 registry 解析最新版本，提前准备 dlx 缓存；启动命令使用本次解析的版本，直到下次统一更新

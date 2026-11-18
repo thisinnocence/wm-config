@@ -40,7 +40,14 @@ The scripts fail fast when their expected environment is not available. Read eac
 System package scripts use `sudo`; user-level language environment scripts reject root execution and keep changes under
 the current user's home directory.
 
-`update_nodejs_env.sh` also resolves the latest `@deepseek-ai/dsh`, prepares its isolated `pnpm dlx` cache, and
+`update_nodejs_env.sh` updates existing pnpm global packages, including Codex, then runs `codex --version`.
+It stops if the Codex command is missing, resolves outside the user's home directory, or fails to start.
+It also checks the separately managed Codex daemon. If its installed or running version differs, the script
+copies and pins the current CLI package with `codex app-server daemon update --from-cli --yes`, then verifies
+the versions match. This can interrupt active Codex sessions; run the updater from a separate terminal.
+An absent daemon is left uninstalled. Matching versions do not trigger a daemon update.
+
+The script also resolves the latest `@deepseek-ai/dsh`, prepares its isolated `pnpm dlx` cache, and
 creates a `dsh` launcher in `pnpm bin -g`. The launcher uses the version selected by the last update; no shell
 configuration or manually maintained version is needed. dsh is excluded from the global package list, though
 upstream dependency warnings can still appear when its cache is installed or refreshed. When migrating an existing
