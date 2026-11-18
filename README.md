@@ -58,5 +58,11 @@ upstream dependency warnings can still appear when its cache is installed or ref
 global installation, first run `pnpm remove -g @deepseek-ai/dsh`; pnpm removes its whole installation group,
 including any packages installed together with dsh.
 
+Chrome and Clash Verge already compare installed versions with their APT candidate or latest GitHub release
+before downloading/installing. The Python updater reuses uv's self-update dry-run and skips an up-to-date uv.
+Python runtimes and uv tools use uv's native version/dependency checks without forced reinstalls.
+The Rust updater checks stable and rustup releases first and adds only missing components. Cargo tools use
+cargo-update's native registry/Git checks without forced rebuilds. Release-check failures stop the scripts.
+
 `update_all.sh` runs `apt-get full-upgrade -y` and `apt-get autoremove -y`. Review the pending APT changes before using
 it on a machine where automatic package removal is not acceptable.

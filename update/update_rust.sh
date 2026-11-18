@@ -59,10 +59,56 @@ preflight() {
 }
 
 update_rust() {
-  # 更新并固定默认 stable 工具链；显式指定工具链，避免目录级 override 生效
-  rustup update stable
-  rustup default stable
-  rustup component add --toolchain stable rustfmt clippy rust-src
+  local check_output
+  local check_status=0
+  local stable_toolchain
+  local default_toolchain
+  local installed_components
+  local component
+  local -a missing_components=()
+
+  # rustup check 返回 100 表示有更新，其他非零值表示检查失败，不能当成无需更新
+  check_output="$(RUSTUP_TERM_COLOR=never rustup check)" || check_status=$?
+  if (( check_status != 0 && check_status != 100 )); then
+    echo "error: rustup update check failed" >&2
+    return "$check_status"
+  fi
+  printf '%s\n' "$check_output"
+  stable_toolchain="$(rustup toolchain list | awk '$1 ~ /^stable-/ { print $1; exit }')"
+  if [[ -n "$stable_toolchain" ]] \
+    && grep -Eq "^${stable_toolchain} - up to date:" <<<"$check_output"; then
+    echo "Rust stable matches the latest release; skipping toolchain update."
+  else
+    rustup update stable --no-self-update
+  fi
+
+  if grep -Eq '^rustup - up to date[[:space:]]*:' <<<"$check_output"; then
+    echo "rustup matches the latest release; skipping self-update."
+  elif grep -Eq '^rustup - update available[[:space:]]*:' <<<"$check_output"; then
+    rustup self update
+  else
+    echo "error: unrecognized rustup self-update check response" >&2
+    return 1
+  fi
+
+  # 显式指定 stable，避免项目目录的 toolchain override；默认值一致时不重复写入
+  stable_toolchain="$(rustup toolchain list | awk '$1 ~ /^stable-/ { print $1; exit }')"
+  default_toolchain="$(rustup toolchain list | awk '/\(default\)/ { print $1; exit }')"
+  if [[ "$default_toolchain" != "$stable_toolchain" ]]; then
+    rustup default stable
+  fi
+
+  installed_components="$(rustup component list --toolchain stable --installed)"
+  for component in rustfmt clippy rust-src; do
+    if ! grep -Eq "^${component}(-[^[:space:]]+)?$" <<<"$installed_components"; then
+      missing_components+=("$component")
+    fi
+  done
+  if (( ${#missing_components[@]} > 0 )); then
+    rustup component add --toolchain stable "${missing_components[@]}"
+  else
+    echo "Rust components rustfmt, clippy and rust-src are installed; skipping component installation."
+  fi
 
   rustup show
   rustc +stable --version
@@ -76,6 +122,7 @@ update_cargo_tools() {
   fi
   require_user_command cargo-install-update
 
+  # cargo-update 原生比较 registry 版本和 Git revision；不使用 --force，匹配时不编译安装
   # 使用已验证并导出的 CARGO_HOME，同时更新 registry 和 Git 来源的工具
   cargo +stable install-update --all --git
   cargo +stable install --list --root "$CARGO_HOME"

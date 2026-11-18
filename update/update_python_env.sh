@@ -18,6 +18,7 @@ UV_PYTHON_BIN_DIR_VALUE=""
 UV_PYTHON_INSTALL_DIR_VALUE=""
 UV_TOOL_BIN_DIR_VALUE=""
 UV_TOOL_DIR_VALUE=""
+UV_UPDATE_CHECK=""
 
 unsupported_environment() {
   local reason="$1"
@@ -77,8 +78,9 @@ preflight() {
   unset UV_CONFIG_FILE UV_PROJECT UV_PYTHON UV_WORKING_DIR
 
   # 只有 standalone installer 安装的 uv 支持 self update，dry-run 不会修改环境
-  if ! uv_cmd self update --dry-run >/dev/null 2>&1; then
-    unsupported_environment "uv does not support self-update; use the original package manager to upgrade it"
+  if ! UV_UPDATE_CHECK="$(uv_cmd self update --dry-run --color never 2>&1)"; then
+    printf '%s\n' "$UV_UPDATE_CHECK" >&2
+    unsupported_environment "uv self-update check failed; verify the installation method and network access"
   fi
 
   UV_PYTHON_INSTALL_DIR_VALUE="$(uv_cmd python dir)"
@@ -102,8 +104,19 @@ preflight() {
 }
 
 update_uv() {
-  echo "Updating uv..."
-  uv_cmd self update
+  # 复用 preflight 的检查结果；只在原生 updater 确认有新版时执行更新
+  printf '%s\n' "$UV_UPDATE_CHECK"
+  if grep -Eq '^Would update uv from v[^ ]+ to v[^ ]+$' <<<"$UV_UPDATE_CHECK"; then
+    echo "Updating uv..."
+    uv_cmd self update
+  elif [[ "$UV_UPDATE_CHECK" == *"You're already on version "*" (the latest version)."* \
+    || "$UV_UPDATE_CHECK" == *"You're on the latest version of uv ("* ]]; then
+    echo "uv matches the latest release; skipping update."
+    return 0
+  else
+    echo "error: unrecognized uv self-update check response" >&2
+    return 1
+  fi
   hash -r
 
   UV_BIN="$(readlink -f "$(command -v uv)")"
@@ -119,7 +132,8 @@ update_managed_python() {
     return
   fi
 
-  echo "Updating uv-managed Python runtimes..."
+  # uv 原生比较各 minor 的最新 patch；不使用 --reinstall，已匹配的 runtime 不会重复安装
+  echo "Checking uv-managed Python runtimes and upgrading outdated patches..."
   uv_cmd python upgrade --managed-python
 }
 
@@ -132,7 +146,8 @@ update_uv_tools() {
     return
   fi
 
-  echo "Updating uv tools..."
+  # 保留 uv 的版本约束、来源和依赖解析；未变化的包不会重新安装
+  echo "Checking uv tools and upgrading outdated packages..."
   uv_cmd tool upgrade --all
 }
 
