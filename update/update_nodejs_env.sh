@@ -418,14 +418,15 @@ update_pnpm() {
   hash -r
   require_user_command codex
   codex --version
-  sync_codex_daemon
 }
 
 # daemon 使用独立安装包；仅在版本不一致时从当前 CLI 同步，避免每次更新都中断会话
 sync_codex_daemon() {
   local versions
-  local attempt
   local was_running
+  local daemon_path
+  local daemon_log
+  local ancestor
 
   versions="$(codex app-server daemon version)"
   jq -e '
@@ -449,6 +450,32 @@ sync_codex_daemon() {
     echo "Codex daemon is not installed; skipping daemon update."
     return 0
   fi
+
+  # 避免重启承载当前脚本的后台服务，导致脚本随会话中断。
+  daemon_path="$(jq -r '.managedCodexPath // empty' <<<"$versions")"
+  if [[ "$was_running" == true && -n "$daemon_path" ]]; then
+    ancestor="$PPID"
+    while [[ "$ancestor" =~ ^[0-9]+$ && "$ancestor" -gt 1 ]]; do
+      if [[ "/proc/$ancestor/exe" -ef "$daemon_path" ]]; then
+        require_command setsid
+        daemon_log="$(mktemp "$HOME_REAL/codex-daemon-update.XXXXXX.log")"
+        printf 'Syncing Codex daemon in a separate session. Update log: %s\n' "$daemon_log"
+        setsid --fork --wait bash -euo pipefail -c \
+          "$(declare -f apply_codex_daemon_update)"$'\n''cd /; apply_codex_daemon_update "$1"' \
+          _ "$was_running" </dev/null >"$daemon_log" 2>&1
+        return
+      fi
+      ancestor="$(awk '/^PPid:/ { print $2 }' "/proc/$ancestor/status" 2>/dev/null)" || break
+    done
+  fi
+
+  apply_codex_daemon_update "$was_running"
+}
+
+apply_codex_daemon_update() {
+  local was_running="$1"
+  local versions
+  local attempt
 
   echo "Syncing Codex daemon from the CLI (may interrupt active Codex sessions)..."
   codex app-server daemon update --from-cli --yes
@@ -575,6 +602,7 @@ main() {
   update_pnpm
   update_dsh
   show_environment
+  sync_codex_daemon
 }
 
 main "$@"

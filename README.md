@@ -48,7 +48,9 @@ The script then runs `codex --version`.
 It stops if the Codex command is missing, resolves outside the user's home directory, or fails to start.
 It also checks the separately managed Codex daemon. If its installed or running version differs, the script
 copies and pins the current CLI package with `codex app-server daemon update --from-cli --yes`, then verifies
-the versions match. This can interrupt active Codex sessions; run the updater from a separate terminal.
+the versions match. Daemon sync runs after the other updates and can interrupt active Codex sessions.
+If the daemon hosts the updater, sync runs in a separate process session and writes the result to the
+printed log path so it can finish across the restart.
 An absent daemon is left uninstalled. Matching versions do not trigger a daemon update.
 
 The script also resolves the latest `@deepseek-ai/dsh`, prepares its isolated `pnpm dlx` cache, and
