@@ -427,6 +427,14 @@ sync_codex_daemon() {
   local daemon_path
   local daemon_log
   local ancestor
+  local codex_home="${CODEX_HOME:-$HOME/.codex}"
+  local socket="$codex_home/app-server-control/app-server-control.sock"
+  local package="$codex_home/packages/app-server-daemon/current"
+
+  if [[ ! -e "$socket" && ! -e "$package" && ! -L "$package" ]]; then
+    echo "Codex daemon is not installed; skipping daemon update."
+    return 0
+  fi
 
   versions="$(codex app-server daemon version)"
   jq -e '
@@ -482,8 +490,7 @@ apply_codex_daemon_update() {
 
   # 等待后台服务重启完成；禁止在 daemon 仍运行旧版本时报告更新成功
   for ((attempt = 0; attempt < 30; attempt++)); do
-    versions="$(codex app-server daemon version)"
-    if jq -e --argjson was_running "$was_running" '
+    if versions="$(codex app-server daemon version)" && jq -e --argjson was_running "$was_running" '
       (.cliVersion | type == "string" and length > 0) and
       .managedCodexVersion == .cliVersion and
       ($was_running == false or .status == "running") and
