@@ -46,12 +46,14 @@ only differing versions are updated. Node.js stays on the LTS channel. Missing p
 and the fnm default is aligned with the selected LTS when needed. Release checks require network access.
 The script then runs `codex --version`.
 It stops if the Codex command is missing, resolves outside the user's home directory, or fails to start.
-It also checks the separately managed Codex daemon. If its installed or running version differs, the script
-copies and pins the current CLI package with `codex app-server daemon update --from-cli --yes`, then verifies
-the versions match. Daemon sync runs after the other updates and can interrupt active Codex sessions.
+It also checks the separately managed Codex daemon when one is running. If its installed or running version
+differs, the script copies and pins the current CLI package with
+`codex app-server daemon update --from-cli --yes`, then verifies the versions match. Daemon sync runs after
+the other updates and can interrupt active Codex sessions.
 If the daemon hosts the updater, sync runs in a separate process session and writes the result to the
 printed log path so it can finish across the restart.
-An absent daemon is left uninstalled. Matching versions do not trigger a daemon update.
+A daemon that is absent or stopped is left untouched; the update never starts it. Matching versions do not
+trigger a daemon update.
 
 The script also resolves the latest `@deepseek-ai/dsh`, prepares its isolated `pnpm dlx` cache, and
 creates a `dsh` launcher in `pnpm bin -g`. The launcher uses the version selected by the last update; no shell

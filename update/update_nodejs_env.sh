@@ -431,8 +431,14 @@ sync_codex_daemon() {
   local socket="$codex_home/app-server-control/app-server-control.sock"
   local package="$codex_home/packages/app-server-daemon/current"
 
-  if [[ ! -e "$socket" && ! -e "$package" && ! -L "$package" ]]; then
-    echo "Codex daemon is not installed; skipping daemon update."
+  # daemon version 只能查询运行中的 daemon：控制 socket 不存在时 CLI 会直接报连接失败，
+  # 因此先按 socket 判断运行状态；已安装但未运行的服务保持原状，不在更新时启动
+  if [[ ! -S "$socket" ]]; then
+    if [[ -e "$package" || -L "$package" ]]; then
+      echo "Codex daemon is installed but not running; skipping daemon update."
+    else
+      echo "Codex daemon is not installed; skipping daemon update."
+    fi
     return 0
   fi
 
